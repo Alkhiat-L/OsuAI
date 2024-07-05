@@ -13,7 +13,6 @@ C300REWARD = 30
 C100REWARD = 10
 C500REWARD = 50
 MISSESREWARD = -100
-MOUSEMOVE = 50
 
 
 def check_apps() -> int:
@@ -33,25 +32,6 @@ def restart():
     time.sleep(1)
     keyboard.release('r')
 
-
-def calculate_gaes(self, rew, val, gamma=0.99, decay=0.97):
-    next_val = np.concatenate([val[1:], [0]])
-    deltas = [rew + gamma * next_val - val for rew, val, next_val in zip(rew, val, next_val)]
-
-    gaes = [deltas[-1]]
-    for i in reversed(range(len(deltas) - 1)):
-        gaes.append(deltas[i] + decay * gamma * gaes[-1])
-
-    ## normalizing the advantages
-
-    mean = np.mean(gaes[::-1])
-    std_dev = np.std(gaes[::-1])
-
-    normalized_gaes = [(gae - mean) / std_dev + 1e-8 for gae in (gaes[::-1])]
-
-    return np.array(normalized_gaes)
-
-
 def screenshot(camera):
     frame = camera.get_latest_frame()
 
@@ -63,26 +43,11 @@ def screenshot(camera):
     return tensor
 
 def step(action, camera):
-    x, y = mouse.get_position()
-    match action:
-        case 0:
-            keyboard.press_and_release('z')
-        case 1:
-            mouse.move(x + MOUSEMOVE, y)
-        case 2:
-            mouse.move(x - MOUSEMOVE, y)
-        case 3:
-            mouse.move(x, y + MOUSEMOVE)
-        case 4:
-            mouse.move(x, y - MOUSEMOVE)
-        case 5:
-            mouse.move(x + MOUSEMOVE, y + MOUSEMOVE)
-        case 6:
-            mouse.move(x - MOUSEMOVE, y + MOUSEMOVE)
-        case 7:
-            mouse.move(x - MOUSEMOVE, y - MOUSEMOVE)
-        case 8:
-            mouse.move(x + MOUSEMOVE, y - MOUSEMOVE)
+    x, y = action.x, action.y
+    x0, y0 = mouse.get_position()
+    mouse.drag(x0, y0, x, y)
+    if action.click == 1:
+        mouse.click()
     screen = screenshot(camera)
     if get_status() == 32 or get_hp() == 0:
         finished = True

@@ -1,13 +1,12 @@
+import time
+
+import cv2
 import dxcam
 import keyboard
-import mouse
+import numpy as np
 import torch
 import torchvision
-import win32gui
-import cv2
-from tokens import *
-import time
-import numpy as np
+from PIL import Image
 
 C300REWARD = 30
 C100REWARD = 10
@@ -15,48 +14,66 @@ C500REWARD = 50
 MISSESREWARD = -100
 
 
-def check_apps() -> int:
-    tabs = []
-    tabs.append(win32gui.FindWindow(None, "StreamCompanion (x64)"))
-    if len(tabs) == 0:
-        return 0
-    tabs.append(win32gui.FindWindow(None, "osu!"))
-    if len(tabs) == 1:
-        return -1
-    if len(tabs) == 2:
-        return 1
-
-
 def restart():
-    keyboard.press('r')
+    keyboard.press("r")
     time.sleep(1)
-    keyboard.release('r')
+    keyboard.release("r")
 
-def screenshot(camera):
+
+def screenshot(
+    camera: dxcam.DXCamera, size: tuple[int, int] = (256, 256), original: bool = False
+) -> np.ndarray:
     frame = camera.get_latest_frame()
 
-    im = cv2.resize(frame, dsize=(96, 96))
+    if original:
+        return frame
+    im: np.ndarray = cv2.resize(frame, dsize=size)
 
-    tensor = torch.unsqueeze(torchvision.transforms.ToTensor()(im), 0)
+    return im
 
-    tensor = tensor.to(device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
-    return tensor
 
-def step(action, camera):
-    x, y = action.x, action.y
-    x0, y0 = mouse.get_position()
-    mouse.drag(x0, y0, x, y)
-    if action.click == 1:
-        mouse.click()
-    screen = screenshot(camera)
-    if get_status() == 32 or get_hp() == 0:
-        finished = True
-    else:
-        finished = False
-    try:
-        c300, c100, c50, misses = get_300(), get_100(), get_50(), get_misses()
-    except Exception:
-        c300, c100, c50, misses = 0, 0, 0, 0
-        print(Exception)
-    reward = c300 * C300REWARD + c100 * C100REWARD + c50 * C500REWARD + misses * MISSESREWARD
-    return screen, reward, finished
+if __name__ == "__main__":
+    camera: dxcam.DXCamera = dxcam.create(
+        device_idx=0,
+        region=(0, 0, 1366, 768),
+        output_color="GRAY",
+    )
+    camera.start()
+    while 5:
+        time.sleep(3)
+        im = screenshot(
+            camera,
+            (
+                160 * 2,
+                90 * 2,
+            ),
+            original=True,
+        )
+        Image.fromarray(cv2.cvtColor(im, cv2.COLOR_GRAY2RGB)).show()
+        reset = cv2.imread("imgs/reset.png", cv2.IMREAD_GRAYSCALE)
+        Image.fromarray(cv2.cvtColor(reset, cv2.COLOR_GRAY2RGB)).show()
+
+        if reset is None:
+            raise FileNotFoundError("The 'reset.png' file could not be found or read.")
+        if reset.shape[0] > im.shape[0] or reset.shape[1] > im.shape[1]:
+            raise ValueError(
+                "The template image (reset.png) is larger than the screenshot. Please use a smaller template."
+            )
+        # Perform template matching
+
+        res = cv2.matchTemplate(im, reset, cv2.TM_SQDIFF_NORMED)
+
+        # Find the best match
+
+        min_val, _, _, _ = cv2.minMaxLoc(res)
+
+        # Define a threshold for matching (you may need to adjust this)
+
+        threshold = 0.1
+
+        # Check if the best match is below the threshold (lower is better for TM_SQDIFF_NORMED)
+
+        has_lost = min_val < threshold
+
+        print(f"Min val: {min_val}, has_lost: {has_lost}")
+    camera.stop()

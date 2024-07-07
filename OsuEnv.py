@@ -8,7 +8,6 @@ import gym.spaces
 import numpy as np
 import psutil
 import pyautogui as ag
-from sympy import true
 
 
 class OsuEnv(gym.Env):
@@ -28,7 +27,7 @@ class OsuEnv(gym.Env):
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(160 * 2, 90 * 2, 1),
+            shape=(90 * 2, 160 * 2),
             dtype=np.uint8,
         )
 
@@ -43,13 +42,24 @@ class OsuEnv(gym.Env):
         self.current_score = 0
 
     def _get_obs(self) -> np.ndarray:
-        return environment.screenshot(
+        shot = environment.screenshot(
             self.camera,
             (
                 160 * 2,
                 90 * 2,
             ),
         )
+        obs_shape = self.observation_space.shape
+
+        try:
+            assert obs_shape
+            assert shot.shape[0] == obs_shape[0]
+        except AssertionError:
+            print(f"Observation shape: {shot.shape}")
+            print(f"Expected shape: {obs_shape}")
+            raise AssertionError("Observation shape does not match expected shape.")
+
+        return shot
 
     def _ensure_osu_is_running(self):
         osu_process = None
@@ -64,12 +74,15 @@ class OsuEnv(gym.Env):
             )
 
         osu_img = "imgs/osu.png"
-        point = ag.locateCenterOnScreen(osu_img, minSearchTime=0.1, confidence=0.7)
+        try:
+            point = ag.locateCenterOnScreen(osu_img, minSearchTime=0.1, confidence=0.7)
 
-        if point:
-            ag.moveTo(point[0], point[1], 0.1)
-            ag.click()
-            time.sleep(0.5)
+            if point:
+                ag.moveTo(point[0], point[1], 0.1)
+                ag.click()
+                time.sleep(0.5)
+        except Exception:
+            print("Already in game")
 
     def _verify_game_state(self):
         # Implement logic to check if Osu is in the correct state
@@ -95,19 +108,13 @@ class OsuEnv(gym.Env):
                 "The template image (reset.png) is larger than the screenshot. Please use a smaller template."
             )
 
-        # Perform template matching
         res = cv2.matchTemplate(im, reset, cv2.TM_SQDIFF_NORMED)
 
-        # Find the best match
         min_val, _, _, _ = cv2.minMaxLoc(res)
-
-        # Define a threshold for matching (you may need to adjust this)
-        threshold = 0.1
-
-        # Check if the best match is below the threshold (lower is better for TM_SQDIFF_NORMED)
-        has_lost = min_val < threshold
-
-        print(f"Min val: {min_val}")
+        threshold = 0.2
+        has_lost = False
+        if min_val < threshold:
+            has_lost = True
 
         return {"has_lost": has_lost}
 
@@ -120,14 +127,18 @@ class OsuEnv(gym.Env):
     def step(self, action):
         action = self._get_action(action)
         x, y = action["x"], action["y"]
-        ag.moveTo(x, y, 0.1)
+        ag.moveTo(x, y, 0.16, tween=lambda x: x**2)
         if action["click"] == 1:
-            ag.click()
+            ag.mouseDown()
+        elif action["click"] == 0:
+            ag.mouseUp()
 
         observation = self._get_obs()
         info = self._get_info()
 
         terminated = info["has_lost"]
+        if terminated:
+            print("Game over!")
         reward = self._calculate_reward()
 
         return observation, reward, terminated, False, info
@@ -140,7 +151,7 @@ class OsuEnv(gym.Env):
         time.sleep(1)  # Give some time for the window to settle
 
         ag.keyDown("'")
-        time.sleep(1.5)
+        time.sleep(0.5)
         ag.keyUp("'")
 
         observation = self._get_obs()
@@ -167,5 +178,11 @@ if __name__ == "__main__":
     print(env.observation_space.shape)
     env.reset()
     for _ in range(300):
-        env.step(env.action_space.sample())
+        observation, reward, terminated, truncated, info = env.step(
+            env.action_space.sample()
+        )
+
+        if terminated:
+            print("Terminated")
+            env.reset()
     env.close()

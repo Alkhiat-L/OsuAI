@@ -34,13 +34,12 @@ class OsuEnv(gym.Env):
             dtype=np.uint8,
         )
 
-        self._action_space = gym.spaces.Box(
+        self.action_space = gym.spaces.Box(
             low=np.array([0, 0, 0]),
             high=np.array([self.screen_width, self.screen_height, 1]),
             shape=(3,),
             dtype=np.int32
         )
-        self.action_space = gym.spaces.flatten_space(self._action_space)
 
         ag.PAUSE = 0
 
@@ -184,7 +183,6 @@ class OsuEnv(gym.Env):
         self.current_combo = 0
         self.current_miss = 0
 
-        print(observation.shape)
 
         return observation, info
 
@@ -203,7 +201,6 @@ if __name__ == "__main__":
 
     print("Starting...")
     env = gym.make("OsuAi/OsuEnv-v0")
-    print(env.observation_space.shape)
     env.reset()
     for _ in range(300):
         observation, reward, terminated, truncated, info = env.step(

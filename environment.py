@@ -3,13 +3,18 @@ import time
 import cv2
 import dxcam
 import keyboard
+import mss
+import mss.base
 import numpy as np
 import torch
 import torchvision
 from PIL import Image
+from screeninfo import get_monitors
 
-SCREEN_WIDTH = 1600
-SCREEN_HEIGHT = 900
+
+SCREEN_WIDTH = get_monitors()[0].width
+SCREEN_HEIGHT = get_monitors()[0].height
+
 
 def restart():
     keyboard.press("r")
@@ -18,9 +23,9 @@ def restart():
 
 
 def screenshot(
-    camera: dxcam.DXCamera, size: tuple[int, int] = (256, 256), original: bool = False
+    camera: mss.base.MSSBase, size: tuple[int, int] = (256, 256), original: bool = False
 ) -> np.ndarray:
-    frame = camera.get_latest_frame()
+    frame = camera.shot()
 
     if original:
         return frame
@@ -31,11 +36,13 @@ def screenshot(
 
 
 if __name__ == "__main__":
+    print(f"Screen size: {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
     camera: dxcam.DXCamera = dxcam.create(
         device_idx=0,
         region=(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
         output_color="GRAY",
     )
+
     camera.start()
     while 5:
         time.sleep(3)

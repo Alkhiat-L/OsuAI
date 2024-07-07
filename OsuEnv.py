@@ -2,15 +2,30 @@ import json
 import time
 from urllib import request
 
-import dxcam
-import environment
+import cv2
 import gymnasium as gym
-from gym import spaces
 import numpy as np
 import psutil
 import pyautogui as ag
-from environment import SCREEN_WIDTH, SCREEN_HEIGHT
-import tokens
+import screeninfo
+from environment import SCREEN_HEIGHT, SCREEN_WIDTH
+from mss import mss
+
+DEBUG = False
+
+observation_space = gym.spaces.Box(
+    low=0,
+    high=255,
+    shape=(57600,),
+    dtype=np.uint8,
+)
+
+action_space = gym.spaces.Box(
+    low=np.array([0, 0, 0]),
+    high=np.array([SCREEN_WIDTH, SCREEN_HEIGHT, 1]),
+    shape=(3,),
+    dtype=np.int32,
+)
 
 
 class OsuEnv(gym.Env):
@@ -20,26 +35,11 @@ class OsuEnv(gym.Env):
         self.screen_width = SCREEN_WIDTH
         self.screen_height = SCREEN_HEIGHT
 
-        self.camera: dxcam.DXCamera = dxcam.create(
-            device_idx=0,
-            region=(0, 0, self.screen_width, self.screen_height),
-            output_color="GRAY",
-        )
-        self.camera.start()
+        print("Starting camera...")
+        self.sct = mss()
 
-        self.observation_space = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(57600,),
-            dtype=np.uint8,
-        )
-
-        self.action_space = gym.spaces.Box(
-            low=np.array([0, 0, 0]),
-            high=np.array([self.screen_width, self.screen_height, 1]),
-            shape=(3,),
-            dtype=np.int32
-        )
+        self.observation_space = observation_space
+        self.action_space = action_space
 
         ag.PAUSE = 0
 
@@ -51,24 +51,26 @@ class OsuEnv(gym.Env):
         self.last_step_time = time.time()
 
     def _get_obs(self) -> np.ndarray:
-        shot = environment.screenshot(
-            self.camera,
-            (
+        sct_img = np.array(self.sct.grab(self.sct.monitors[1]))
+
+        im: np.ndarray = cv2.resize(
+            cv2.cvtColor(sct_img, cv2.COLOR_BGR2GRAY),
+            dsize=(
                 160 * 2,
                 90 * 2,
             ),
-        )
+        ).flatten()
+
         obs_shape = self.observation_space.shape
 
         try:
             assert obs_shape
-            assert shot.shape[0] == obs_shape[0]
+            assert im.shape[0] == obs_shape[0]
         except AssertionError:
-            print(f"Observation shape: {shot.shape}")
+            print(f"Observation shape: {im.shape}")
             print(f"Expected shape: {obs_shape}")
             raise AssertionError("Observation shape does not match expected shape.")
-
-        return shot
+        return im
 
     def _ensure_osu_is_running(self):
         osu_process = None
@@ -76,12 +78,19 @@ class OsuEnv(gym.Env):
             if process.info["name"] == "osu!.exe":
                 osu_process = process
                 break
-
+        stream_companion_process = None
+        for process in psutil.process_iter(["name"]):
+            if process.info["name"] == "osu!StreamCompanion.exe":
+                stream_companion_process = process
+                break
         if osu_process is None:
             raise RuntimeError(
                 "Osu! is not running. Please start Osu! before running the environment."
             )
-
+        if stream_companion_process is None:
+            raise RuntimeError(
+                "Stream Companion is not running. Please start Stream Companion before running the environment."
+            )
         osu_img = "imgs/osu.png"
         try:
             point = ag.locateCenterOnScreen(osu_img, minSearchTime=0.1, confidence=0.7)
@@ -96,6 +105,7 @@ class OsuEnv(gym.Env):
     def _verify_game_state(self):
         # Implement logic to check if Osu is in the correct state
         # This could involve analyzing the screenshot to detect specific UI elements
+
         pass
 
     def _get_info(self) -> dict:
@@ -107,8 +117,8 @@ class OsuEnv(gym.Env):
         combo = data["combo"]
         miss = data["miss"]
 
-        print(f"HP: {hp}")
-
+        if DEBUG:
+            print(f"HP: {hp}")
         return {
             "has_lost": has_lost,
             "hp": hp,
@@ -127,12 +137,12 @@ class OsuEnv(gym.Env):
         reward += (info["combo"] - self.current_combo) * 10  # 0 - ~200
         reward -= (info["miss"] - self.current_miss) * 5  # 0 - ~100
 
-        print(f"Reward: {reward}")
-        print(f"HP reward: {(info["hp"] - self.current_hp) * 0.5}")
-        print(f"Acc reward: {(info['acc'] - self.current_acc) * 0.5}")
-        print(f"Combo reward: {(info['combo'] - self.current_combo) * 0.5}")
-        print(f"Miss reward: {(info['miss'] - self.current_miss) * 0.5}")
-
+        if DEBUG:
+            print(f"Reward: {reward}")
+            print(f"HP reward: {(info['hp'] - self.current_hp) * 0.5}")
+            print(f"Acc reward: {(info['acc'] - self.current_acc) * 0.5}")
+            print(f"Combo reward: {(info['combo'] - self.current_combo) * 0.5}")
+            print(f"Miss reward: {(info['miss'] - self.current_miss) * 0.5}")
         self.current_hp = info["hp"]
         self.current_acc = info["acc"]
         self.current_combo = info["combo"]
@@ -143,12 +153,23 @@ class OsuEnv(gym.Env):
     def step(self, action):
         action = self._get_action(action)
         x, y = action["x"], action["y"]
+        if x >= self.screen_width - 1 and y >= self.screen_height - 1:
+            x -= 10
+            y -= 10
+        if x <= 1 and y <= 1:
+            x += 10
+            y += 10
+        if x >= self.screen_width - 1 and y <= 1:
+            x -= 10
+            y += 10
+        if x <= 1 and y >= self.screen_height - 1:
+            x += 10
+            y -= 10
         ag.moveTo(x, y, 0, tween=lambda x: x**2)
         if action["click"] == 1:
             ag.mouseDown()
         elif action["click"] == 0:
             ag.mouseUp()
-
         if self.last_step_time + ((1 / 60) / 6) > time.time():
             time.sleep(self.last_step_time + ((1 / 60) / 6) - time.time())
         self.last_step_time = time.time()
@@ -183,16 +204,16 @@ class OsuEnv(gym.Env):
         self.current_combo = 0
         self.current_miss = 0
 
-
         return observation, info
 
     def render(self):
         # The game is already rendering on the screen, so we don't need to do anything here
+
         pass
 
     def close(self):
-        if self.camera:
-            self.camera.stop()
+        if self.sct:
+            self.sct.close()
 
 
 gym.register("OsuAi/OsuEnv-v0", "OsuEnv:OsuEnv")

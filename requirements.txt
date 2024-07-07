@@ -12,3 +12,5 @@ psutil
 pywin32
 ray[rllib]
 websockets
+screeninfo
+mss

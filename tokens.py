@@ -13,20 +13,26 @@ def get_name() -> str:
     return username
 
 
-def get_status() -> int:
+def get_status() -> str:
     with connect("ws://localhost:20727/tokens?updatesPerSecond=60") as websocket:
         websocket.send(json.dumps(["status"]))
         data = json.loads(websocket.recv())
-        status = int(data["status"])
-    return status
+        status_id = int(data["status"])
+        if status_id == 1:
+            return 'Listening'
+        if status_id == 2:
+            return 'Playing'
+    return 'Error'
 
 
 if __name__ == "__main__":
     start_time = time.time()
     print(json.loads(request.urlopen("http://localhost:20727/json").read()))
     print("Seconds since start: ", time.time() - start_time)
+    print(get_status())
 
-
+#2 == 'Playing'
+#1 == Listening
 def get_combo() -> int:
     with connect("ws://localhost:20727/tokens?updatesPerSecond=60") as websocket:
         websocket.send(json.dumps(["combo"]))
@@ -73,3 +79,4 @@ def get_hp() -> float:
         data = json.loads(websocket.recv())
         hp = float(data["playerHp"])
     return hp
+

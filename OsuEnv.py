@@ -10,7 +10,7 @@ import pyautogui as ag
 import screeninfo
 from environment import SCREEN_HEIGHT, SCREEN_WIDTH
 from mss import mss
-
+from tokens import get_status
 DEBUG = False
 
 observation_space = gym.spaces.flatten_space(
@@ -199,10 +199,31 @@ class OsuEnv(gym.Env):
         print("Resetting...")
         self._ensure_osu_is_running()
         time.sleep(1)  # Give some time for the window to settle
-
-        ag.keyDown("'")
-        time.sleep(0.5)
-        ag.keyUp("'")
+        if get_status() == 'Playing':
+            if self.current_hp == 0:
+                print("Playing")
+                ag.keyDown('Esc')
+                time.sleep(0.5)
+                ag.keyUp('Esc')
+                time.sleep(0.5)
+                ag.keyDown('Esc')
+                time.sleep(0.5)
+                ag.keyUp('Esc')
+                super().reset(seed=seed, options=options)
+            else:
+                ag.keyDown('"')
+                time.sleep(0.5)
+                ag.keyUp('"')
+        if (get_status()) == 'Listening':
+            print('Listening...')
+            ag.keyDown('F2')
+            time.sleep(0.5)
+            ag.keyUp('F2')
+            time.sleep(0.5)
+            ag.keyDown('Enter')
+            time.sleep(0.5)
+            ag.keyUp('Enter')
+            time.sleep(1)
 
         observation = self._get_obs()
         info = self._get_info()

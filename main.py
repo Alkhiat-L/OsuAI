@@ -16,17 +16,22 @@ if __name__ == "__main__":
     env = gym.make("OsuEnv:OsuAi/OsuEnv-v0")
 
     model = PPO("MlpPolicy", env, verbose=1)
+    i = 0
     try:
         model.load("ppo")
     except FileNotFoundError:
         pass
-    try:
-        model.learn(total_timesteps=500)
-    except Exception:
-        pass
-    model.save("ppo")
-
-    obs, info = env.reset()
     while True:
-        action, _states = model.predict(observation=obs)
-        observation, reward, terminated, _, info = env.step(action)
+        model.learn(total_timesteps=1000)
+        i+=1
+        print(i)
+
+        model.save("ppo")
+
+        print('Model saved!')
+        if i >= 10:
+            model.save(f"ppo-backup-{i}")
+
+
+
+

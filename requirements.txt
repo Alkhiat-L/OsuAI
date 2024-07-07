@@ -11,3 +11,4 @@ pyautogui
 psutil 
 pywin32
 ray[rllib]
+websockets

@@ -5,11 +5,11 @@ from urllib import request
 import dxcam
 import environment
 import gymnasium as gym
-import gym.spaces
+from gym import spaces
 import numpy as np
 import psutil
 import pyautogui as ag
-
+from environment import SCREEN_WIDTH, SCREEN_HEIGHT
 import tokens
 
 
@@ -17,8 +17,8 @@ class OsuEnv(gym.Env):
     metadata = {"render_modes": ["human"], "render_fps": 60}
 
     def __init__(self):
-        self.screen_width = 1366
-        self.screen_height = 768
+        self.screen_width = SCREEN_WIDTH
+        self.screen_height = SCREEN_HEIGHT
 
         self.camera: dxcam.DXCamera = dxcam.create(
             device_idx=0,
@@ -30,20 +30,15 @@ class OsuEnv(gym.Env):
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(90 * 2, 160 * 2),
+            shape=(57600,),
             dtype=np.uint8,
         )
 
-        self._action_space = gym.spaces.Tuple(
-            [
-                gym.spaces.Box(
-                    low=0, high=self.screen_width, shape=(1,), dtype=np.int32
-                ),
-                gym.spaces.Box(
-                    low=0, high=self.screen_height, shape=(1,), dtype=np.int32
-                ),
-                gym.spaces.Discrete(2),
-            ]
+        self._action_space = gym.spaces.Box(
+            low=np.array([0, 0, 0]),
+            high=np.array([self.screen_width, self.screen_height, 1]),
+            shape=(3,),
+            dtype=np.int32
         )
         self.action_space = gym.spaces.flatten_space(self._action_space)
 

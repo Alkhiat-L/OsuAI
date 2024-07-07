@@ -8,11 +8,8 @@ import torch
 import torchvision
 from PIL import Image
 
-C300REWARD = 30
-C100REWARD = 10
-C500REWARD = 50
-MISSESREWARD = -100
-
+SCREEN_WIDTH = 1600
+SCREEN_HEIGHT = 900
 
 def restart():
     keyboard.press("r")
@@ -28,6 +25,7 @@ def screenshot(
     if original:
         return frame
     im: np.ndarray = cv2.resize(frame, dsize=size)
+    im = im.flatten()
 
     return im
 
@@ -35,7 +33,7 @@ def screenshot(
 if __name__ == "__main__":
     camera: dxcam.DXCamera = dxcam.create(
         device_idx=0,
-        region=(0, 0, 1366, 768),
+        region=(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT),
         output_color="GRAY",
     )
     camera.start()

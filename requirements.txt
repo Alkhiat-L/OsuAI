@@ -14,3 +14,4 @@ ray[rllib]
 websockets
 screeninfo
 mss
+stable-baselines3

@@ -13,18 +13,23 @@ from mss import mss
 
 DEBUG = False
 
-observation_space = gym.spaces.Box(
-    low=0,
-    high=255,
-    shape=(57600,),
-    dtype=np.uint8,
+observation_space = gym.spaces.flatten_space(
+    gym.spaces.Box(
+        low=0,
+        high=255,
+        shape=(
+            160 * 2,
+            90 * 2,
+        ),
+        dtype=np.uint8,
+    )
 )
 
 action_space = gym.spaces.Box(
-    low=np.array([0, 0, 0]),
-    high=np.array([SCREEN_WIDTH, SCREEN_HEIGHT, 1]),
+    low=0.0,
+    high=1.0,
     shape=(3,),
-    dtype=np.int32,
+    dtype=np.float32,
 )
 
 
@@ -128,7 +133,11 @@ class OsuEnv(gym.Env):
         }
 
     def _get_action(self, action) -> dict:
-        return {"x": action[0], "y": action[1], "click": action[2]}
+        return {
+            "x": action[0] * SCREEN_WIDTH,
+            "y": action[1] * SCREEN_HEIGHT,
+            "click": True if action[2] >= 0.5 else False,
+        }
 
     def _calculate_reward(self, info):
         reward = 0

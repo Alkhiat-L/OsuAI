@@ -1,6 +1,7 @@
+import json
 import time
+from urllib import request
 
-import cv2
 import dxcam
 import environment
 import gym
@@ -8,6 +9,8 @@ import gym.spaces
 import numpy as np
 import psutil
 import pyautogui as ag
+
+import tokens
 
 
 class OsuEnv(gym.Env):
@@ -39,7 +42,14 @@ class OsuEnv(gym.Env):
             )
         )
 
-        self.current_score = 0
+        ag.PAUSE = 0
+
+        self.current_hp = 200
+        self.current_acc = 100
+        self.current_combo = 0
+        self.current_miss = 0
+
+        self.last_step_time = time.time()
 
     def _get_obs(self) -> np.ndarray:
         shot = environment.screenshot(
@@ -90,48 +100,59 @@ class OsuEnv(gym.Env):
         pass
 
     def _get_info(self) -> dict:
-        im = environment.screenshot(
-            self.camera,
-            (
-                160 * 2,
-                90 * 2,
-            ),
-            original=True,
-        )
-        reset = cv2.imread("imgs/reset.png", cv2.IMREAD_GRAYSCALE)
+        data: dict = json.loads(request.urlopen("http://localhost:20727/json").read())
 
-        if reset is None:
-            raise FileNotFoundError("The 'reset.png' file could not be found or read.")
+        has_lost = data["playerHp"] <= 0
+        hp = data["playerHp"]
+        acc = data["acc"]
+        combo = data["combo"]
+        miss = data["miss"]
 
-        if reset.shape[0] > im.shape[0] or reset.shape[1] > im.shape[1]:
-            raise ValueError(
-                "The template image (reset.png) is larger than the screenshot. Please use a smaller template."
-            )
+        print(f"HP: {hp}")
 
-        res = cv2.matchTemplate(im, reset, cv2.TM_SQDIFF_NORMED)
-
-        min_val, _, _, _ = cv2.minMaxLoc(res)
-        threshold = 0.2
-        has_lost = False
-        if min_val < threshold:
-            has_lost = True
-
-        return {"has_lost": has_lost}
+        return {
+            "has_lost": has_lost,
+            "hp": hp,
+            "acc": acc,
+            "combo": combo,
+            "miss": miss,
+        }
 
     def _get_action(self, action) -> dict:
         return {"x": action[0], "y": action[1], "click": action[2]}
 
-    def _calculate_reward(self):
-        return 0
+    def _calculate_reward(self, info):
+        reward = 0
+        reward += (info["hp"] - self.current_hp) * 0.5  # 0 - 200
+        reward += (info["acc"] - self.current_acc) * 2  # 0 - 100
+        reward += (info["combo"] - self.current_combo) * 10  # 0 - ~200
+        reward -= (info["miss"] - self.current_miss) * 5  # 0 - ~100
+
+        print(f"Reward: {reward}")
+        print(f"HP reward: {(info["hp"] - self.current_hp) * 0.5}")
+        print(f"Acc reward: {(info['acc'] - self.current_acc) * 0.5}")
+        print(f"Combo reward: {(info['combo'] - self.current_combo) * 0.5}")
+        print(f"Miss reward: {(info['miss'] - self.current_miss) * 0.5}")
+
+        self.current_hp = info["hp"]
+        self.current_acc = info["acc"]
+        self.current_combo = info["combo"]
+        self.current_miss = info["miss"]
+
+        return reward
 
     def step(self, action):
         action = self._get_action(action)
         x, y = action["x"], action["y"]
-        ag.moveTo(x, y, 0.16, tween=lambda x: x**2)
+        ag.moveTo(x, y, 0, tween=lambda x: x**2)
         if action["click"] == 1:
             ag.mouseDown()
         elif action["click"] == 0:
             ag.mouseUp()
+
+        if self.last_step_time + ((1 / 60) / 6) > time.time():
+            time.sleep(self.last_step_time + ((1 / 60) / 6) - time.time())
+        self.last_step_time = time.time()
 
         observation = self._get_obs()
         info = self._get_info()
@@ -139,7 +160,7 @@ class OsuEnv(gym.Env):
         terminated = info["has_lost"]
         if terminated:
             print("Game over!")
-        reward = self._calculate_reward()
+        reward = self._calculate_reward(info)
 
         return observation, reward, terminated, False, info
 
@@ -156,6 +177,12 @@ class OsuEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
+
+        self.last_step_time = time.time()
+        self.current_hp = 200
+        self.current_acc = 100
+        self.current_combo = 0
+        self.current_miss = 0
 
         print(observation.shape)
 

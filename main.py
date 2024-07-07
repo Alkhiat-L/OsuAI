@@ -20,7 +20,10 @@ if __name__ == "__main__":
         model.load("ppo")
     except FileNotFoundError:
         pass
-    model.learn(total_timesteps=500)
+    try:
+        model.learn(total_timesteps=500)
+    except Exception:
+        pass
     model.save("ppo")
 
     obs, info = env.reset()

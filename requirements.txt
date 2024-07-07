@@ -1,4 +1,4 @@
-gym
+gymnasium
 dxcam
 keyboard
 mouse
@@ -10,3 +10,4 @@ tqdm
 pyautogui
 psutil 
 pywin32
+ray[rllib]

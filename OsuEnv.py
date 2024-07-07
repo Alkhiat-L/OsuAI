@@ -4,7 +4,7 @@ from urllib import request
 
 import dxcam
 import environment
-import gym
+import gymnasium as gym
 import gym.spaces
 import numpy as np
 import psutil
@@ -34,13 +34,18 @@ class OsuEnv(gym.Env):
             dtype=np.uint8,
         )
 
-        self.action_space = gym.spaces.Tuple(
-            (
-                gym.spaces.Box(low=0, high=self.screen_width, shape=(1,)),
-                gym.spaces.Box(low=0, high=self.screen_height, shape=(1,)),
+        self._action_space = gym.spaces.Tuple(
+            [
+                gym.spaces.Box(
+                    low=0, high=self.screen_width, shape=(1,), dtype=np.int32
+                ),
+                gym.spaces.Box(
+                    low=0, high=self.screen_height, shape=(1,), dtype=np.int32
+                ),
                 gym.spaces.Discrete(2),
-            )
+            ]
         )
+        self.action_space = gym.spaces.flatten_space(self._action_space)
 
         ag.PAUSE = 0
 
@@ -197,11 +202,12 @@ class OsuEnv(gym.Env):
             self.camera.stop()
 
 
+gym.register("OsuAi/OsuEnv-v0", "OsuEnv:OsuEnv")
+
 if __name__ == "__main__":
-    gym.register("OsuEnv-v0", OsuEnv)
 
     print("Starting...")
-    env = gym.make("OsuEnv-v0")
+    env = gym.make("OsuAi/OsuEnv-v0")
     print(env.observation_space.shape)
     env.reset()
     for _ in range(300):

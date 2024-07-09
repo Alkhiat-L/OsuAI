@@ -179,8 +179,9 @@ class OsuEnv(gym.Env):
             ag.mouseDown()
         elif action["click"] == 0:
             ag.mouseUp()
-        if self.last_step_time + ((1 / 60) / 6) > time.time():
-            time.sleep(self.last_step_time + ((1 / 60) / 6) - time.time())
+        time_now = time.time()
+        if self.last_step_time + ((1 / 60) / 6) > time_now:
+            time.sleep(self.last_step_time + ((1 / 60) / 6) - time_now)
         self.last_step_time = time.time()
 
         observation = self._get_obs()
@@ -202,26 +203,24 @@ class OsuEnv(gym.Env):
         if get_status() == 'Playing':
             if self.current_hp == 0:
                 print("Playing")
-                ag.keyDown('Esc')
-                time.sleep(0.5)
-                ag.keyUp('Esc')
-                time.sleep(0.5)
-                ag.keyDown('Esc')
-                time.sleep(0.5)
-                ag.keyUp('Esc')
-                super().reset(seed=seed, options=options)
+                while get_status() == 'Playing':
+                    print("Esc")
+                    ag.keyDown('Esc')
+                    time.sleep(0.1)
+                    ag.keyUp('Esc')
+                    time.sleep(1)
             else:
                 ag.keyDown('"')
                 time.sleep(0.5)
                 ag.keyUp('"')
         if (get_status()) == 'Listening':
-            print('Listening...')
+            print('Listening')
             ag.keyDown('F2')
-            time.sleep(0.5)
+            time.sleep(0.1)
             ag.keyUp('F2')
             time.sleep(0.5)
             ag.keyDown('Enter')
-            time.sleep(0.5)
+            time.sleep(0.1)
             ag.keyUp('Enter')
             time.sleep(1)
 

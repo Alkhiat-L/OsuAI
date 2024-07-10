@@ -10,7 +10,7 @@ import pyautogui as ag
 import screeninfo
 from environment import SCREEN_HEIGHT, SCREEN_WIDTH
 from mss import mss
-from tokens import get_status
+from tokens import *
 DEBUG = False
 
 observation_space = gym.spaces.flatten_space(
@@ -201,7 +201,7 @@ class OsuEnv(gym.Env):
         self._ensure_osu_is_running()
         time.sleep(1)  # Give some time for the window to settle
         if get_status() == 'Playing':
-            if self.current_hp == 0:
+            if get_hp() == 0:
                 print("Playing")
                 while get_status() == 'Playing':
                     print("Esc")

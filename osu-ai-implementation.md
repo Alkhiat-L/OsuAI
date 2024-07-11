@@ -1,4 +1,4 @@
-# Osu! Estratégia de implementação de IA usando Gravações de outros jogadores
+# Osu! Estratégia de implementação de IA usando Gravações num ambiente Pygame
 
 ## 1. Coleta de dados e pré-processamento
 

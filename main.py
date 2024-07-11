@@ -1,9 +1,7 @@
 import gymnasium as gym
-import ray
-from OsuEnv import action_space, observation_space, OsuEnv as OsuEnv
+from OsuEnv import OsuEnv as OsuEnv
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.env_util import make_vec_env
 
 
 def env_creator(_):
@@ -23,15 +21,11 @@ if __name__ == "__main__":
         pass
     while True:
         model.learn(total_timesteps=1000)
-        i+=1
+        i += 1
         print(i)
 
         model.save("ppo")
 
-        print('Model saved!')
+        print("Model saved!")
         if i >= 10:
             model.save(f"ppo-backup-{i}")
-
-
-
-

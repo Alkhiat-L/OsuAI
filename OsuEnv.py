@@ -11,6 +11,7 @@ import screeninfo
 from environment import SCREEN_HEIGHT, SCREEN_WIDTH
 from mss import mss
 from tokens import *
+
 DEBUG = False
 
 observation_space = gym.spaces.flatten_space(
@@ -25,12 +26,13 @@ observation_space = gym.spaces.flatten_space(
     )
 )
 
-action_space = gym.spaces.Box(
-    low=0.0,
-    high=1.0,
-    shape=(3,),
-    dtype=np.float32,
-)
+# Calculate the number of bits needed for x and y coordinates
+
+x_bits = int(np.ceil(np.log2(SCREEN_WIDTH)))
+y_bits = int(np.ceil(np.log2(SCREEN_HEIGHT)))
+total_bits = x_bits + y_bits + 1  # +1 for mouse click
+
+action_space = gym.spaces.Box(low=0, high=1, shape=(total_bits,), dtype=np.float32)
 
 
 class OsuEnv(gym.Env):
@@ -132,11 +134,26 @@ class OsuEnv(gym.Env):
             "miss": miss,
         }
 
+    def _binary_to_decimal(self, binary_array):
+        return int("".join(map(str, binary_array)), 2)
+
     def _get_action(self, action) -> dict:
+        # Convert float action to binary
+        binary_action = (action > 0.5).astype(int)
+
+        # Convert binary action to x, y coordinates and click
+        x_coord = self._binary_to_decimal(binary_action[:x_bits])
+        y_coord = self._binary_to_decimal(binary_action[x_bits:x_bits+y_bits])
+        mouse_click = binary_action[-1]
+
+        # Ensure coordinates are within screen bounds
+        x_coord = min(x_coord, self.screen_width - 1)
+        y_coord = min(y_coord, self.screen_height - 1)
+
         return {
-            "x": action[0] * SCREEN_WIDTH,
-            "y": action[1] * SCREEN_HEIGHT,
-            "click": True if action[2] >= 0.5 else False,
+            "x": x_coord,
+            "y": y_coord,
+            "click": bool(mouse_click)
         }
 
     def _calculate_reward(self, info):
@@ -175,9 +192,9 @@ class OsuEnv(gym.Env):
             x += 10
             y -= 10
         ag.moveTo(x, y, 0, tween=lambda x: x**2)
-        if action["click"] == 1:
+        if action["click"]:
             ag.mouseDown()
-        elif action["click"] == 0:
+        else:
             ag.mouseUp()
         time_now = time.time()
         if self.last_step_time + ((1 / 60) / 6) > time_now:
@@ -200,29 +217,29 @@ class OsuEnv(gym.Env):
         print("Resetting...")
         self._ensure_osu_is_running()
         time.sleep(1)  # Give some time for the window to settle
-        if get_status() == 'Playing':
-            if get_hp() == 0:
-                print("Playing")
-                while get_status() == 'Playing':
-                    print("Esc")
-                    ag.keyDown('Esc')
-                    time.sleep(0.1)
-                    ag.keyUp('Esc')
-                    time.sleep(1)
-            else:
-                ag.keyDown('"')
-                time.sleep(0.5)
-                ag.keyUp('"')
-        if (get_status()) == 'Listening':
-            print('Listening')
-            ag.keyDown('F2')
-            time.sleep(0.1)
-            ag.keyUp('F2')
-            time.sleep(0.5)
-            ag.keyDown('Enter')
-            time.sleep(0.1)
-            ag.keyUp('Enter')
-            time.sleep(1)
+        # if get_status() == 'Playing':
+        #     if get_hp() == 0:
+        #         print("Playing")
+        #         while get_status() == 'Playing':
+        #             print("Esc")
+        #             ag.keyDown('Esc')
+        #             time.sleep(0.1)
+        #             ag.keyUp('Esc')
+        #             time.sleep(1)
+        #     else:
+        ag.keyDown('"')
+        time.sleep(0.5)
+        ag.keyUp('"')
+        # if (get_status()) == 'Listening':
+        #     print('Listening')
+        #     ag.keyDown('F2')
+        #     time.sleep(0.1)
+        #     ag.keyUp('F2')
+        #     time.sleep(0.5)
+        #     ag.keyDown('Enter')
+        #     time.sleep(0.1)
+        #     ag.keyUp('Enter')
+        #     time.sleep(1)
 
         observation = self._get_obs()
         info = self._get_info()

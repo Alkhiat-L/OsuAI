@@ -8,10 +8,12 @@ opencv-python
 numpy<2.0
 tqdm
 pyautogui
-psutil 
+psutil
 pywin32
 ray[rllib]
 websockets
 screeninfo
 mss
 stable-baselines3
+pygame
+pytest

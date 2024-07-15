@@ -1,7 +1,13 @@
+import sys
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 
-from .render import Render
+import pygame
+
+from osupy.effect import Effect, SplashEffect
+
+from .render import Renderer
 
 
 class NoteType(Enum):
@@ -54,14 +60,85 @@ class Note:
         )
 
 
+class States(Enum):
+    IDLE = 0
+    TRAIN = 1
+    HUMAN = 2
+
+
+@dataclass
+class ActionSpace:
+    x: int
+    y: int
+    click: bool
+
+    def mouse_pos(self) -> tuple[int, int]:
+        return (self.x, self.y)
+
+
+def _to_miliseconds(nanosecs: int) -> int:
+    return nanosecs // 1000000
+
+
 class OsuPy:
-    def __init__(self) -> None:
-        self.render = Render(self)
+    def __init__(
+        self,
+    ) -> None:
+        self.renderer = Renderer(self)
         self.notes = []
         self.score = 0
         self.accuracy = 0
         self.hp = 200
         self.time = 0
+        self.last_time = 0
+        self.state: States = States.IDLE
+        self.mouse: tuple[int, int] = (0, 0)
+        self.effects: list[Effect] = []
+        self.delta = 0
 
-    def step(self) -> None:
-        self.time += 1
+    def step(self, action: "ActionSpace") -> None:
+        self.mouse = action.mouse_pos()
+
+        if action.click:
+            self.effects.append(SplashEffect(self.mouse))
+        for effect in self.effects:
+            effect.step(self.delta)
+            if effect.queue_delete:
+                del effect
+        if self.state == States.HUMAN:
+            self.render()
+        if self.state == States.TRAIN:
+            self.time += 1
+            self.delta = 1
+
+    def render(self) -> None:
+        self.renderer.render()
+        now = _to_miliseconds(time.time_ns())
+        self.time += now - self.last_time
+        self.delta = now - self.last_time
+        self.last_time = now
+
+    def reset(self) -> None:
+        self.notes = []
+        self.score = 0
+        self.accuracy = 0
+        self.hp = 200
+        self.time = 0
+        self.last_time = 0
+        self.state: States = States.IDLE
+
+
+if __name__ == "__main__":
+    print("Starting...")
+    osu = OsuPy()
+    osu.reset()
+    osu.state = States.HUMAN
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        pressed_keys = pygame.mouse.get_pressed()
+        mouse = pygame.mouse.get_pos()
+        osu.step(ActionSpace(mouse[0], mouse[1], pressed_keys[0]))

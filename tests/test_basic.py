@@ -1,3 +1,6 @@
+import osupy.NoteType
+
+import osupy.Point
 import pytest
 
 from .context import OsuPy
@@ -15,7 +18,7 @@ def test_works():
 def test_load_a_note(note_str):
     note = OsuPy.Note.from_string(note_str)
 
-    assert type(note) == OsuPy.Note
+    assert type(note) is OsuPy.Note
 
 
 def test_load_note_position(note_str):
@@ -34,13 +37,13 @@ def test_load_note_time(note_str):
 def test_load_note_curve_points(note_str):
     note = OsuPy.Note.from_string(note_str)
 
-    assert OsuPy.Point(-8, 233) in note.curve_points
+    assert osupy.Point.Point(-8, 233) in note.curve_points
 
 
 def test_load_type(note_str):
     note = OsuPy.Note.from_string(note_str)
 
-    assert note.type_f == OsuPy.NoteType.COMBO
+    assert note.type_f == osupy.NoteType.NoteType.SLIDER
 
 
 def test_load_note_with_multiple_points():
@@ -49,5 +52,5 @@ def test_load_note_with_multiple_points():
     )
     note = OsuPy.Note.from_string(note_str)
 
-    assert OsuPy.Point(174, 37) in note.curve_points
-    assert OsuPy.Point(286, 108) in note.curve_points
+    assert osupy.Point.Point(174, 37) in note.curve_points
+    assert osupy.Point.Point(286, 108) in note.curve_points

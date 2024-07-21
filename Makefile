@@ -1,12 +1,14 @@
+SHELL := /bin/bash
+
 PIP=uv pip
 
 init:
 	$(PIP) install -r requirements.txt
 
-start: init
+start: test init
 	python -m osupy.OsuPy
 
-test:
+test: init
 	pytest tests
 
-.PHONY: init test
+.PHONY: init test start

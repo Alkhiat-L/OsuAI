@@ -1,63 +1,22 @@
+import math
+import os
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
+from typing import List, Optional
 
 import pygame
 
-from osupy.effect import Effect, SplashEffect
+import osupy.effect as e
+
+from osupy.beatmap import Beatmap, parse_beatmap
+
+from osupy.Note import Note
+
+from osupy.NoteType import NoteType
 
 from .render import Renderer
-
-
-class NoteType(Enum):
-    CIRCLE = 0
-    SLIDER = 1
-    COMBO = 2
-    SPINNER = 3
-    COMBO_1 = 4
-    COMBO_2 = 5
-    COMBO_3 = 6
-    HOLD = 7
-
-
-@dataclass
-class Point:
-    x: int
-    y: int
-
-    def __eq__(self, value) -> bool:
-        return self.x == value.x and self.y == value.y
-
-    @staticmethod
-    def from_string(string: str) -> "Point":
-        x = int(string.split(":")[0])
-        y = int(string.split(":")[1])
-        return Point(x, y)
-
-
-@dataclass
-class Note:
-    x: int
-    y: int
-    time: int
-    type_f: NoteType
-    hit_sound: int = 0
-    curve_type: str = ""
-    curve_points: list[Point] = field(default_factory=lambda: [])
-
-    @staticmethod
-    def from_string(string: str) -> "Note":
-        args = string.split(",")
-        curve_points = [Point.from_string(i) for i in args[5].split("|")[1:]]
-        return Note(
-            int(args[0]),
-            int(args[1]),
-            int(args[2]),
-            NoteType(int(args[3])),
-            curve_type=args[5].split("|")[0],
-            curve_points=curve_points,
-        )
 
 
 class States(Enum):
@@ -85,54 +44,156 @@ class OsuPy:
         self,
     ) -> None:
         self.renderer = Renderer(self)
+        self.beatmap: Optional[Beatmap] = None
         self.notes = []
+        self.upcoming_notes = []
+        self.effects: List[e.Effect] = []
         self.score = 0
         self.accuracy = 0
         self.hp = 200
-        self.time = 0
-        self.last_time = 0
+        self.game_time = 0  # Time since the start of the beatmap
+        self.last_update_time = 0  # Last time the game state was updated
         self.state: States = States.IDLE
         self.mouse: tuple[int, int] = (0, 0)
-        self.effects: list[Effect] = []
-        self.delta = 0
+        self.delta: float = 0
+        self.hold = False
+
+        # Initialize Pygame mixer for audio
+
+        pygame.mixer.init()
+        self.audio: Optional[pygame.mixer.Sound] = None
+        self.audio_start_time = 0
+
+    def start_game(self) -> None:
+        self.state = States.HUMAN
+        self.last_update_time = time.time()
+        self.audio_start_time = time.time()
+        if self.audio:
+            self.audio.set_volume(0.05)
+            self.audio.play()
+
+    def stop_game(self) -> None:
+        if self.audio:
+            self.audio.stop()
+        self.state = States.IDLE
+
+    def load_beatmap(self, file_path: str) -> None:
+        self.beatmap = parse_beatmap(file_path)
+        self.notes = self.beatmap.notes
+
+        # Load audio file
+
+        audio_path = os.path.join(
+            os.path.dirname(file_path), self.beatmap.audio_filename
+        )
+        if os.path.exists(audio_path):
+            self.audio = pygame.mixer.Sound(audio_path)
+        else:
+            print(f"Warning: Audio file not found at {audio_path}")
+        self.reset()
 
     def step(self, action: "ActionSpace") -> None:
         self.mouse = action.mouse_pos()
 
-        if action.click:
-            self.effects.append(SplashEffect(self.mouse))
+        if action.click and not self.hold:
+            self.effects.append(e.SplashEffect(position=self.mouse))
+            self.effects.append(e.ParticleEffect(position=self.mouse))
+            self.check_hit()
+            self.hold = True
+        if not action.click and self.hold:
+            self.hold = False
+        self.effects = [effect for effect in self.effects if not effect.is_finished()]
         for effect in self.effects:
             effect.step(self.delta)
-            if effect.queue_delete:
-                del effect
+        self.upcoming_notes = [
+            note for note in self.upcoming_notes if note.time > self.game_time - 200
+        ]
         if self.state == States.HUMAN:
             self.render()
         if self.state == States.TRAIN:
-            self.time += 1
+            self.game_time += 1
             self.delta = 1
+
+    def check_hit(self) -> None:
+        hit_window = 50  # ms
+        for note in self.upcoming_notes:
+            if abs(note.time - self.game_time) <= hit_window:
+                distance = math.sqrt(
+                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
+                )
+                if distance <= 50:  # Hit circle radius
+                    self.hit_note(note)
+                    return
+            if abs(note.time - self.game_time) <= hit_window * 2:
+                distance = math.sqrt(
+                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
+                )
+                if distance <= 50:  # Hit circle radius
+                    self.hit_note(note, 100)
+                    return
+            if abs(note.time - self.game_time) <= hit_window * 3:
+                distance = math.sqrt(
+                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
+                )
+                if distance <= 50:  # Hit circle radius
+                    self.hit_note(note, 50)
+                    return
+        # Miss if no note was hit
+
+        self.miss()
+
+    def hit_note(self, note: Note, score: int = 300) -> None:
+        self.score += score
+        self.accuracy = (
+            self.accuracy * (len(self.notes) - len(self.upcoming_notes)) + 100
+        ) / (len(self.notes) - len(self.upcoming_notes) + 1)
+        self.hp = min(200, self.hp + 20)
+        self.upcoming_notes.remove(note)
+
+        self.effects.append(e.ScorePopup(position=(note.x, note.y), score=score))
+
+        if note.type_f == NoteType.SLIDER:
+            self.effects.append(
+                e.SliderEffect(
+                    start=(note.x, note.y),
+                    end=(note.curve_points[-1].x, note.curve_points[-1].y),
+                )
+            )
+
+    def miss(self) -> None:
+        self.accuracy = (
+            self.accuracy * (len(self.notes) - len(self.upcoming_notes))
+        ) / (len(self.notes) - len(self.upcoming_notes) + 1)
+        self.hp = max(0, self.hp - 10)
 
     def render(self) -> None:
         self.renderer.render()
-        now = _to_miliseconds(time.time_ns())
-        self.time += now - self.last_time
-        self.delta = now - self.last_time
-        self.last_time = now
+        current_time = time.time()
+        self.delta = (
+            current_time - self.last_update_time
+        ) * 1000  # Convert to milliseconds
+        self.game_time += self.delta
+        self.last_update_time = current_time
 
     def reset(self) -> None:
-        self.notes = []
+        self.upcoming_notes = self.notes.copy()
+        self.game_time = 0
+        self.last_update_time = time.time()
         self.score = 0
         self.accuracy = 0
         self.hp = 200
-        self.time = 0
         self.last_time = 0
         self.state: States = States.IDLE
+        self.effects.clear()
+
+        self.audio_start_time = 0
 
 
 if __name__ == "__main__":
     print("Starting...")
     osu = OsuPy()
-    osu.reset()
-    osu.state = States.HUMAN
+    osu.load_beatmap("beatmap.osu")
+    osu.start_game()
 
     while True:
         for event in pygame.event.get():

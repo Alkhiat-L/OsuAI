@@ -3,6 +3,11 @@ from abc import abstractmethod
 
 import pygame
 
+from osupy.bezier_curve import bezier_curve
+
+from osupy.Note import Note
+from osupy.perfect_circle import perfect_circle
+
 
 class Effect:
     def __init__(self, duration: int = 1000):
@@ -61,20 +66,31 @@ class ScorePopup(Effect):
 
 
 class SliderEffect(Effect):
-    def __init__(
-        self, start: tuple[int, int], end: tuple[int, int], duration: int = 1000
-    ):
+    def __init__(self, note: Note, duration: int = 1000):
         super().__init__(duration)
-        self.start = start
-        self.end = end
+        self.note = note
+        self.curve = [(self.note.x, self.note.y)] + [
+            (p.x, p.y) for p in self.note.curve_points
+        ]
+        if self.note.curve_type == "B":
+            self.curve = bezier_curve(self.curve, 50)
+        if self.note.curve_type == "P":
+            self.curve = perfect_circle(self.curve, 100)
+            self.curve.reverse()
 
     def draw(self, surface: pygame.Surface) -> None:
         progress = 1 - (self.time / self.duration)
-        x = int(self.start[0] + (self.end[0] - self.start[0]) * progress)
-        y = int(self.start[1] + (self.end[1] - self.start[1]) * progress)
-
-        pygame.draw.circle(surface, (255, 68, 68), (x, y), 15)
-        pygame.draw.line(surface, (255, 68, 68), self.start, (x, y), 3)
+        if len(self.curve) <= int(len(self.curve) * progress) + 1:
+            return
+        actual_node = self.curve[int(len(self.curve) * progress)]
+        pygame.draw.circle(surface, (255, 68, 68), (actual_node[0], actual_node[1]), 15)
+        pygame.draw.lines(
+            surface,
+            (255, 68, 68),
+            False,
+            self.curve[int(len(self.curve) * progress) :],
+            2,
+        )
 
 
 class ParticleEffect(Effect):

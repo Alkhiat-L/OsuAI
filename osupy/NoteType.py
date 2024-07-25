@@ -6,7 +6,3 @@ class NoteType(Enum):
     SLIDER = 2
     COMBO = 3
     SPINNER = 4
-    COMBO_1 = 5
-    COMBO_2 = 6
-    COMBO_3 = 7
-    HOLD = 8

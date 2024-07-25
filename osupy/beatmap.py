@@ -60,7 +60,7 @@ def parse_hit_objects(hit_objects_section: str) -> List[Note]:
     for line in hit_objects_section.strip().split("\n"):
         parts = line.split(",")
         x, y, time, type_flags = map(int, parts[:4])
-        note_type = NoteType(type_flags & 7)  # Extract the base note type
+        note_type = Note.get_type(type_flags)  # Extract the base note type
 
         if note_type == NoteType.SLIDER:
             curve_type, *curve_points_str = parts[5].split("|")

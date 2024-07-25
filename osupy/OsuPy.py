@@ -35,10 +35,6 @@ class ActionSpace:
         return (self.x, self.y)
 
 
-def _to_miliseconds(nanosecs: int) -> int:
-    return nanosecs // 1000000
-
-
 class OsuPy:
     def __init__(
         self,
@@ -57,6 +53,7 @@ class OsuPy:
         self.mouse: tuple[int, int] = (0, 0)
         self.delta: float = 0
         self.hold = False
+        self.curve_to_follow: Optional[Note] = None
 
         # Initialize Pygame mixer for audio
 
@@ -100,14 +97,22 @@ class OsuPy:
             self.effects.append(e.ParticleEffect(position=self.mouse))
             self.check_hit()
             self.hold = True
+        if self.hold:
+            self.check_curve()
         if not action.click and self.hold:
             self.hold = False
+            self.curve_to_follow = None
         self.effects = [effect for effect in self.effects if not effect.is_finished()]
         for effect in self.effects:
             effect.step(self.delta)
         self.upcoming_notes = [
             note for note in self.upcoming_notes if note.time > self.game_time - 200
         ]
+
+        if self.hp <= 0:
+            self.stop_game()
+        if len(self.upcoming_notes) == 0:
+            self.stop_game()
         if self.state == States.HUMAN:
             self.render()
         if self.state == States.TRAIN:
@@ -117,30 +122,26 @@ class OsuPy:
     def check_hit(self) -> None:
         hit_window = 50  # ms
         for note in self.upcoming_notes:
-            if abs(note.time - self.game_time) <= hit_window:
-                distance = math.sqrt(
-                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
-                )
-                if distance <= 50:  # Hit circle radius
-                    self.hit_note(note)
-                    return
-            if abs(note.time - self.game_time) <= hit_window * 2:
-                distance = math.sqrt(
-                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
-                )
-                if distance <= 50:  # Hit circle radius
-                    self.hit_note(note, 100)
-                    return
-            if abs(note.time - self.game_time) <= hit_window * 3:
-                distance = math.sqrt(
-                    (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
-                )
-                if distance <= 50:  # Hit circle radius
-                    self.hit_note(note, 50)
-                    return
-        # Miss if no note was hit
-
+            distance = math.sqrt(
+                (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
+            )
+            error = abs(note.time - self.game_time)
+            if error <= hit_window and distance <= 50:
+                self.hit_note(note)
+                return
+            if error <= hit_window * 2 and distance <= 50:
+                self.hit_note(note, 100)
+                return
+            if error <= hit_window * 3 and distance <= 50:
+                self.hit_note(note, 50)
+                return
         self.miss()
+
+    def check_curve(self) -> None:
+        if self.curve_to_follow is None:
+            return
+        for note in self.upcoming_notes:
+            pass
 
     def hit_note(self, note: Note, score: int = 300) -> None:
         self.score += score
@@ -155,10 +156,10 @@ class OsuPy:
         if note.type_f == NoteType.SLIDER:
             self.effects.append(
                 e.SliderEffect(
-                    start=(note.x, note.y),
-                    end=(note.curve_points[-1].x, note.curve_points[-1].y),
+                    note=note,
                 )
             )
+            self.curve_to_follow = note
 
     def miss(self) -> None:
         self.accuracy = (
@@ -203,3 +204,6 @@ if __name__ == "__main__":
         pressed_keys = pygame.mouse.get_pressed()
         mouse = pygame.mouse.get_pos()
         osu.step(ActionSpace(mouse[0], mouse[1], pressed_keys[0]))
+        if osu.state == States.IDLE:
+            osu.reset()
+            osu.start_game()

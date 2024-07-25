@@ -1,9 +1,12 @@
 from typing import Optional, TYPE_CHECKING
 
 import pygame
-import pygame.locals
+import pygame.locals as locals
+
+from osupy.bezier_curve import bezier_curve
 
 from osupy.NoteType import NoteType
+from osupy.perfect_circle import perfect_circle
 
 
 if TYPE_CHECKING:
@@ -15,6 +18,7 @@ class Renderer:
     def __init__(self, parent: "OsuPy") -> None:
         self.parent = parent
         pygame.init()
+        pygame.mouse.set_cursor(pygame.cursors.ball)
         self.clock = pygame.time.Clock()
         self.surface: Optional[pygame.Surface] = None
         self.width = 640
@@ -115,6 +119,10 @@ class Renderer:
                     points = [(note.x, note.y)] + [
                         (p.x, p.y) for p in note.curve_points
                     ]
+                    if note.curve_type == "B":
+                        points = bezier_curve(points)
+                    if note.curve_type == "P":
+                        points = perfect_circle(points)
                     pygame.draw.lines(
                         self.surface, (255, 255, 255, alpha), False, points, 2
                     )

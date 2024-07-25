@@ -4,6 +4,7 @@ from abc import abstractmethod
 import pygame
 
 from osupy.bezier_curve import bezier_curve
+from osupy.linear import linear
 
 from osupy.Note import Note
 from osupy.perfect_circle import perfect_circle
@@ -69,14 +70,16 @@ class SliderEffect(Effect):
     def __init__(self, note: Note, duration: int = 1000):
         super().__init__(duration)
         self.note = note
-        self.curve = [(self.note.x, self.note.y)] + [
-            (p.x, p.y) for p in self.note.curve_points
+        self.curve = [(self.note.get_virtual_x(), self.note.get_virtual_y())] + [
+            (p.get_virtual_x(), p.get_virtual_y()) for p in self.note.curve_points
         ]
         if self.note.curve_type == "B":
             self.curve = bezier_curve(self.curve, 50)
         if self.note.curve_type == "P":
             self.curve = perfect_circle(self.curve, 100)
             self.curve.reverse()
+        if self.note.curve_type == "L":
+            self.curve = linear(self.curve, 50)
 
     def draw(self, surface: pygame.Surface) -> None:
         progress = 1 - (self.time / self.duration)

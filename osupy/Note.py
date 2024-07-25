@@ -31,6 +31,12 @@ class Note:
             return NoteType.SPINNER
         return NoteType.CIRCLE
 
+    def get_virtual_x(self) -> int:
+        return self.x + 80
+
+    def get_virtual_y(self) -> int:
+        return self.y + 80
+
     @staticmethod
     def from_string(string: str) -> "Note":
         args = string.split(",")

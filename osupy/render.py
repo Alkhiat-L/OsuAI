@@ -1,7 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
 import pygame
-import pygame.locals as locals
 
 from osupy.bezier_curve import bezier_curve
 
@@ -21,8 +20,8 @@ class Renderer:
         pygame.mouse.set_cursor(pygame.cursors.ball)
         self.clock = pygame.time.Clock()
         self.surface: Optional[pygame.Surface] = None
-        self.width = 640
-        self.height = 480
+        self.width = 800
+        self.height = 600
         self.font = pygame.font.Font(None, 36)
 
     def render(self) -> None:
@@ -93,12 +92,19 @@ class Renderer:
                 )
 
                 self.surface.blit(
-                    circle_surface, (note.x - size // 2, note.y - size // 2)
+                    circle_surface,
+                    (
+                        note.get_virtual_x() - size // 2,
+                        note.get_virtual_y() - size // 2,
+                    ),
                 )
 
                 if progress > 0.8:
                     pygame.draw.circle(
-                        self.surface, (255, 255, 255), (note.x, note.y), 27
+                        self.surface,
+                        (255, 255, 255),
+                        (note.get_virtual_x(), note.get_virtual_y()),
+                        27,
                     )
                 # Draw number for combo
 
@@ -108,16 +114,17 @@ class Renderer:
                 self.surface.blit(
                     combo_num,
                     (
-                        note.x - combo_num.get_width() // 2,
-                        note.y - combo_num.get_height() // 2,
+                        note.get_virtual_x() - combo_num.get_width() // 2,
+                        note.get_virtual_y() - combo_num.get_height() // 2,
                     ),
                 )
 
                 # Draw slider path if it's a slider
 
                 if note.type_f == NoteType.SLIDER:
-                    points = [(note.x, note.y)] + [
-                        (p.x, p.y) for p in note.curve_points
+                    points = [(note.get_virtual_x(), note.get_virtual_y())] + [
+                        (p.get_virtual_x(), p.get_virtual_y())
+                        for p in note.curve_points
                     ]
                     if note.curve_type == "B":
                         points = bezier_curve(points)

@@ -4,7 +4,7 @@ import sys
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pygame
 
@@ -35,6 +35,21 @@ class ActionSpace:
         return (self.x, self.y)
 
 
+# TODO: Update the class to be a better environment for an Reinforcement Learning agent
+
+# TODO: Create a ObservationSpace class for the observations the agent receives
+
+
+@dataclass
+class ObservationSpace:
+    game_time: float
+    mouse_pos: Tuple[int, int]
+    upcoming_notes: List[Tuple[int, int, int, NoteType]]  # x, y, time, type
+    hp: int
+    score: int
+    accuracy: float
+
+
 class OsuPy:
     def __init__(
         self,
@@ -54,9 +69,6 @@ class OsuPy:
         self.delta: float = 0
         self.hold = False
         self.curve_to_follow: Optional[Note] = None
-
-        # Initialize Pygame mixer for audio
-
         pygame.mixer.init()
         self.audio: Optional[pygame.mixer.Sound] = None
         self.audio_start_time = 0
@@ -77,9 +89,6 @@ class OsuPy:
     def load_beatmap(self, file_path: str) -> None:
         self.beatmap = parse_beatmap(file_path)
         self.notes = self.beatmap.notes
-
-        # Load audio file
-
         audio_path = os.path.join(
             os.path.dirname(file_path), self.beatmap.audio_filename
         )
@@ -123,7 +132,8 @@ class OsuPy:
         hit_window = 50  # ms
         for note in self.upcoming_notes:
             distance = math.sqrt(
-                (note.x - self.mouse[0]) ** 2 + (note.y - self.mouse[1]) ** 2
+                (note.get_virtual_x() - self.mouse[0]) ** 2
+                + (note.get_virtual_y() - self.mouse[1]) ** 2
             )
             error = abs(note.time - self.game_time)
             if error <= hit_window and distance <= 50:
@@ -141,6 +151,8 @@ class OsuPy:
         if self.curve_to_follow is None:
             return
         for note in self.upcoming_notes:
+            # TODO: Implement curves
+
             pass
 
     def hit_note(self, note: Note, score: int = 300) -> None:
@@ -151,7 +163,11 @@ class OsuPy:
         self.hp = min(200, self.hp + 20)
         self.upcoming_notes.remove(note)
 
-        self.effects.append(e.ScorePopup(position=(note.x, note.y), score=score))
+        self.effects.append(
+            e.ScorePopup(
+                position=(note.get_virtual_x(), note.get_virtual_y()), score=score
+            )
+        )
 
         if note.type_f == NoteType.SLIDER:
             self.effects.append(
@@ -175,6 +191,8 @@ class OsuPy:
         ) * 1000  # Convert to milliseconds
         self.game_time += self.delta
         self.last_update_time = current_time
+
+    # TODO: Create the reward function
 
     def reset(self) -> None:
         self.upcoming_notes = self.notes.copy()

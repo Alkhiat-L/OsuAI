@@ -67,28 +67,43 @@ class Renderer:
             return
         current_time = self.parent.game_time
         approach_rate = self.parent.beatmap.approach_rate if self.parent.beatmap else 9
-        approach_duration = 1200 - (approach_rate * 100)  # AR9 = 450ms, AR10 = 350ms
+        approach_duration = 1200 - 750 * (approach_rate - 5) / 5
+        fade_in = 800 - 500 * (approach_rate - 5) / 5
 
         for note in self.parent.upcoming_notes:
             time_diff = note.time - current_time
             if 0 <= time_diff <= approach_duration:
                 progress = 1 - (time_diff / approach_duration)
+                fade_in_progress = 1 - (time_diff / fade_in)
                 size = int(54 + (1 - progress) * 54)
                 alpha = int(255 * progress)
+                fade_in_alpha = int(255 * fade_in_progress)
 
                 circle_surface = pygame.Surface((size, size), pygame.SRCALPHA)
                 pygame.draw.circle(
                     circle_surface,
-                    (255, 68, 68, alpha),
+                    (255, 68, 68, max(min(alpha, 255), 0)),
                     (size // 2, size // 2),
                     size // 2,
                 )
                 pygame.draw.circle(
                     circle_surface,
-                    (255, 255, 255, alpha),
+                    (255, 255, 255, max(min(alpha, 255), 0)),
                     (size // 2, size // 2),
                     size // 2 - 2,
                     2,
+                )
+                final_circle_surface = pygame.Surface((54, 54), pygame.SRCALPHA)
+                pygame.draw.circle(
+                    final_circle_surface,
+                    (255, 68, 68, max(min(fade_in_alpha, 255), 0)),
+                    (27, 27),
+                    27 - 2,
+                )
+
+                self.surface.blit(
+                    final_circle_surface,
+                    (note.get_virtual_x() - 27, note.get_virtual_y() - 27),
                 )
 
                 self.surface.blit(
@@ -131,7 +146,11 @@ class Renderer:
                     if note.curve_type == "P":
                         points = perfect_circle(points)
                     pygame.draw.lines(
-                        self.surface, (255, 255, 255, alpha), False, points, 2
+                        self.surface,
+                        (255, 255, 255, max(min(alpha, 255), 0)),
+                        False,
+                        points,
+                        2,
                     )
 
     def draw_ui(self) -> None:

@@ -19,6 +19,9 @@ init:
 start: test init
 	$(PYTHON) -m osupy.OsuPy
 
+debug: test init
+	$(PYTHON) -m debugpy --listen 5678 --wait-for-client -m osupy.OsuPy
+
 test: init
 	pytest tests
 

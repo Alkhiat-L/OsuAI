@@ -7,10 +7,10 @@ class Point:
     y: int
 
     def get_virtual_x(self) -> int:
-        return self.x + 80
+        return self.x + 150
 
     def get_virtual_y(self) -> int:
-        return self.y + 80
+        return self.y + 150
 
     def __eq__(self, value) -> bool:
         return self.x == value.x and self.y == value.y

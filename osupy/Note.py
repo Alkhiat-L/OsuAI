@@ -1,7 +1,12 @@
 from dataclasses import dataclass, field
+from typing import Optional, TYPE_CHECKING
 
 from osupy.NoteType import NoteType
+
 from osupy.Point import Point
+
+if TYPE_CHECKING:
+    from osupy.beatmap import Beatmap
 
 
 @dataclass
@@ -11,9 +16,26 @@ class Note:
     time: int
     type_f: NoteType
     hit_sound: int = 0
+    duration: Optional[float] = None
     curve_type: str = ""
-    combo_number = 50
-    curve_points: list[Point] = field(default_factory=lambda: [])
+    combo_number: int = 1
+    curve_points: list["Point"] = field(default_factory=lambda: [])
+    slides: int = 1
+    length: Optional[float] = None
+    beatmap: Optional["Beatmap"] = None
+
+    def __post_init__(self) -> None:
+        if self.beatmap is None:
+            return
+        if self.length is None:
+            return
+        self.duration = (
+            abs(
+                (self.length / (self.beatmap.slider_multiplier * 100))
+                * self.beatmap.timing_points[self.time].beat_length
+            )
+            * 10
+        )
 
     @staticmethod
     def get_type(type_f: int) -> NoteType:
@@ -32,10 +54,10 @@ class Note:
         return NoteType.CIRCLE
 
     def get_virtual_x(self) -> int:
-        return self.x + 80
+        return self.x + 150
 
     def get_virtual_y(self) -> int:
-        return self.y + 80
+        return self.y + 150
 
     @staticmethod
     def from_string(string: str) -> "Note":
@@ -48,4 +70,5 @@ class Note:
             Note.get_type(int(args[3])),
             curve_type=args[5].split("|")[0],
             curve_points=curve_points,
+            length=float(args[7]),
         )

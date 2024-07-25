@@ -39,11 +39,6 @@ class ActionSpace:
         return (self.x, self.y)
 
 
-# TODO: Update the class to be a better environment for an Reinforcement Learning agent
-
-# TODO: Create a ObservationSpace class for the observations the agent receives
-
-
 @dataclass
 class ObservationSpace:
     game_time: float
@@ -264,8 +259,6 @@ class OsuPy:
         )
 
     def get_reward(self) -> float:
-        # This is a simple reward function. You might want to adjust it based on your specific requirements.
-
         return self.score / 300 + self.accuracy / 100 + self.hp / 200
 
     def render(self) -> None:

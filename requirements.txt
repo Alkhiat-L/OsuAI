@@ -9,7 +9,6 @@ numpy<2.0
 tqdm
 pyautogui
 psutil
-pywin32
 ray[rllib]
 websockets
 screeninfo

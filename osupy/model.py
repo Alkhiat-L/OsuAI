@@ -19,7 +19,7 @@ if __name__ == '__main__':
     except FileNotFoundError:
         pass
     while True:
-        model.learn(total_timesteps=50000)
+        model.learn(total_timesteps=125000)
         i += 1
         print(i)
         model.save('osupy-ppo')

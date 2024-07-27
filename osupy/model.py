@@ -14,6 +14,7 @@ if __name__ == '__main__':
     clipped = gym.wrappers.ClipAction(wrapped_env)  # type: ignore
     model = PPO(policy='MlpPolicy', env=clipped, verbose=1)
     i = 0
+    j = 1
     try:
         model.load('osupy-ppo')
     except FileNotFoundError:
@@ -24,5 +25,6 @@ if __name__ == '__main__':
         print(i)
         model.save('osupy-ppo')
         print('Model Saved!')
-        if i >= 10:
-            model.save(f'osupy-ppo-backup={i}')
+        if i > j*10:
+            model.save(f'osupy-ppo-backup={j}')
+            j += 1

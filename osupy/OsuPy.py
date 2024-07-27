@@ -213,12 +213,17 @@ class OsuPy:
                 self._distance_from_next_note(),
                 "near_curve",
                 self.near_curve,
+                "game_time",
+                self.game_time,
             )
             print(f"reward: {reward}")
 
         self.last_accuracy = self.accuracy
         self.last_score = self.score
         self.last_hp = self.hp
+
+        self.game_time += 1
+        self.delta = 1
 
         return observation, reward, done, {}
 
@@ -379,9 +384,6 @@ class OsuPy:
             ) * 1000  # Convert to milliseconds
             self.game_time += self.delta
             self.last_update_time = current_time
-        if self.state == States.TRAIN:
-            self.game_time += 1
-            self.delta = 1
 
     def reset(self) -> dict[str, Any]:
         self.upcoming_notes = self.notes.copy()

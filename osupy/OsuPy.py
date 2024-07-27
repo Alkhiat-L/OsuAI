@@ -156,6 +156,7 @@ class OsuPy:
             self.hold = True
         self.check_misses()
         self.check_curve()
+        self.accuracy = self.notes_hit / max(1, self.notes_len)
         if not action.click and self.hold:
             self.hold = False
         self.effects = [effect for effect in self.effects if not effect.is_finished()]
@@ -275,7 +276,7 @@ class OsuPy:
             self.score += score
             if score == 300:
                 self.notes_hit += 1
-            self.accuracy = self.notes_len/self.notes_hit
+            
             self.hp = min(200, self.hp + 20)
             self.upcoming_notes.remove(note)
 
@@ -312,7 +313,7 @@ class OsuPy:
         ).as_dict()
 
     def get_reward(self) -> float:
-        return (self.score - self.last_score) / 300 + (self.accuracy - self.last_accuracy) + (self.hp - self.last_hp) / 10
+        return (self.score - self.last_score) + (self.accuracy - self.last_accuracy) * 10 + (self.hp - self.last_hp) / 10
 
     def render(self) -> None:
         if self.state == States.HUMAN:

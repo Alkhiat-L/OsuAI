@@ -95,6 +95,8 @@ class OsuPy:
     def __init__(
         self,
     ) -> None:
+        self.rewards = 0
+        self.last_rewards = 0
         self.renderer = Renderer(self)
         self.beatmap: Optional[Beatmap] = None
         self.notes = []
@@ -102,8 +104,8 @@ class OsuPy:
         self.effects: List[e.Effect] = []
         self.score = 0
         self.last_score = 0
-        self.accuracy = 0
-        self.last_accuracy = 0
+        self.accuracy = 1
+        self.last_accuracy = 1
         self.hp = 200
         self.last_hp = 200
         self.notes_len = 0
@@ -250,8 +252,9 @@ class OsuPy:
                 )
                 self.score += score
 
-                if score >= 300:
+                if score >= 50:
                     self.notes_hit += 1
+                    self.accuracy = self.notes_hit / self.notes_len
 
 
     def calculate_curve_point(self, note: Note, progress: float) -> Tuple[int, int]:
@@ -273,9 +276,9 @@ class OsuPy:
         self.notes_len += 1
         if not note.type_f == NoteType.SLIDER:
             self.score += score
-            if score == 300:
+            if score >= 50:
                 self.notes_hit += 1
-            self.accuracy = self.notes_len/self.notes_hit
+            self.accuracy = self.notes_hit/self.notes_len
             self.hp = min(200, self.hp + 20)
             self.upcoming_notes.remove(note)
 
@@ -295,11 +298,9 @@ class OsuPy:
             self.curve_to_follow = note
 
     def miss(self) -> None:
-        self.accuracy = (
-            self.accuracy * (len(self.notes) - len(self.upcoming_notes))
-        ) / (len(self.notes) - len(self.upcoming_notes) + 1)
-        self.hp = max(0, self.hp - 10)
         self.notes_len += 1
+        self.accuracy = self.notes_hit/self.notes_len
+        self.hp = max(0, self.hp - 10)
 
     def get_observation(self) -> OrderedDict:
         return ObservationSpace(
@@ -312,8 +313,7 @@ class OsuPy:
         ).as_dict()
 
     def get_reward(self) -> float:
-        return (self.score - self.last_score) / 300 + (self.accuracy - self.last_accuracy) + (self.hp - self.last_hp) / 10
-
+        return (self.score - self.last_score) / 100 + (self.accuracy - self.last_accuracy)*10*self.notes_len + (self.hp - self.last_hp) / 10
     def render(self) -> None:
         if self.state == States.HUMAN:
             self.renderer.render()
@@ -332,14 +332,19 @@ class OsuPy:
         self.game_time = 0
         self.last_update_time = time.time()
         self.score = 0
-        self.accuracy = 0
+        self.accuracy = 1
+        self.last_accuracy = 1
         self.hp = 200
         self.last_hp = 200
         self.last_time = 0
         self.state: States = States.IDLE
         self.effects.clear()
-
+        self.rewards = 0
+        self.last_rewards = 0
+        self.last_score = 0
         self.audio_start_time = 0
+        self.notes_hit = 0
+        self.notes_len = 0
 
         return self.get_observation()
 

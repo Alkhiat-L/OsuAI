@@ -3,11 +3,13 @@ from typing import Any, Optional, override, SupportsFloat
 import gymnasium as gym
 import numpy as np
 
-from osupy.OsuPy import ActionSpace, OsuPy
+from osupy.OsuPy import ActionSpace, OsuPy, States
 
 
 class OsuPyEnv(gym.Env):
-    def __init__(self):
+    metadata = {"render_modes": ["human", "rgb_array"]}
+
+    def __init__(self, render_mode=None):
         self.osu = OsuPy()
         self.observation_space = gym.spaces.Dict(
             {
@@ -39,6 +41,11 @@ class OsuPyEnv(gym.Env):
 
         self.action_space = gym.spaces.flatten_space(self._action_space)
 
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+        if self.render_mode == "human":
+            self.osu.state = States.HUMAN
+
         pass
 
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
@@ -49,6 +56,7 @@ class OsuPyEnv(gym.Env):
     @override
     def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         observation, reward, done, info = self.osu.step(self._parse_action(action))  # type: ignore
+        self.render()
         return observation, reward, done, False, info
 
     @override
@@ -59,6 +67,8 @@ class OsuPyEnv(gym.Env):
         self.osu.load_beatmap("beatmap.osu")
         self.osu.reset()
         self.osu.start_game()
+        if self.render_mode == "human":
+            self.osu.state = States.HUMAN
         assert self.observation_space.contains(self.osu.get_observation())
 
         return self.osu.get_observation(), {}

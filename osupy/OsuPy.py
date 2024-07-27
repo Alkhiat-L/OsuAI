@@ -143,7 +143,7 @@ class OsuPy:
 
     def step(self, action: ActionSpace) -> Tuple[dict[str, Any], float, bool, dict]:
         action = ActionSpace(action["x"], action["y"], action["click"])
-        self.mouse = action.mouse_pos()
+        self.mouse = (int(action.x), int(action.y))
 
         if action.click and not self.hold:
             self.effects.append(e.SplashEffect(position=self.mouse))

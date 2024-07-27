@@ -9,7 +9,7 @@ def env_creator(_):
     return env
 
 if __name__ == '__main__':
-    env = gym.make('osupy/OsuPyEnv-v0')
+    env = gym.make('osupy/OsuPyEnv-v0', render_mode='human')
     wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
     clipped = gym.wrappers.ClipAction(wrapped_env)  # type: ignore
     model = PPO(policy='MlpPolicy', env=clipped, verbose=1)
@@ -19,10 +19,11 @@ if __name__ == '__main__':
     except FileNotFoundError:
         pass
     while True:
-        model.learn(total_timesteps=1000)
-        i += 1
-        print(i)
-        model.save('osupy-ppo')
-        print('Model Saved!')
-        if i >= 10:
-            model.save(f'osupy-ppo-backup={i}')
+        obs, info = clipped.reset()
+        done = False
+        while not done:
+            action, _ = model.predict(obs)
+            obs, rewards, done, _, info = clipped.step(action)
+            i += 1
+            if i % 100 == 0:
+                print(f'Episode {i} reward: {rewards}')

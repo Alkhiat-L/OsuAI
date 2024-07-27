@@ -26,6 +26,9 @@ env: test init
 model: test init
 	$(PYTHON) -m osupy.model
 
+model_test: test init
+	$(PYTHON) -m osupy.test
+
 test: init
 	pytest tests
 

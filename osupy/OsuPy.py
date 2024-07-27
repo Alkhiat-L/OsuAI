@@ -21,7 +21,7 @@ from osupy.Note import Note
 from osupy.NoteType import NoteType
 from osupy.perfect_circle import perfect_circle
 
-from render import Renderer
+from osupy.render import Renderer
 
 
 class States(Enum):

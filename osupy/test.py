@@ -1,4 +1,6 @@
+import sys
 import gymnasium as gym
+import pygame
 from osupy.env import OsuPyEnv as OsuPyEnv
 
 from stable_baselines3 import PPO
@@ -21,6 +23,10 @@ if __name__ == '__main__':
         obs, info = wrapped_env.reset()
         done = False
         while not done:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
             action, _ = model.predict(obs)
             obs, rewards, done, _, info = wrapped_env.step(action)
             i += 1

@@ -29,6 +29,7 @@ class OsuPyEnv(gym.Env):
                         for _ in range(5)
                     ]
                 ),
+                "curve": gym.spaces.Box(low=0, high=2, shape=(8,), dtype=np.float32),
             }
         )
         self._action_space = gym.spaces.Dict(
@@ -51,7 +52,7 @@ class OsuPyEnv(gym.Env):
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
         action = gym.spaces.unflatten(self._action_space, action)  # type: ignore
 
-        return ActionSpace(action["x"]*400, action["y"]*300, action["click"] >= 1)
+        return ActionSpace(action["x"] * 400, action["y"] * 300, action["click"] >= 1)
 
     @override
     def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
@@ -85,7 +86,7 @@ gym.register("osupy/OsuPyEnv-v0", "osupy:OsuPyEnv")
 
 if __name__ == "__main__":
     print("Starting...")
-    env = gym.make("osupy/OsuPyEnv-v0")
+    env = gym.make("osupy/OsuPyEnv-v0", render_mode="human")
     obs = env.reset()
     for _ in range(300):
         observation, reward, terminated, truncated, info = env.step(

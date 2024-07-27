@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, List, Optional, Tuple
 
+from matplotlib.pylab import f
 import numpy as np
 import pygame
 
@@ -48,22 +49,36 @@ class ObservationSpace:
     game_time: float
     mouse_pos: Tuple[int, int]
     upcoming_notes: List[Note]
+    curve: Optional[Note]
     hp: int
     score: int
     accuracy: float
 
     def _upcoming_notes(self) -> tuple[OrderedDict, ...]:
-        return tuple([
-            OrderedDict(
-                {
-                    "time": np.array([note.time], dtype=np.float32),
-                    "type": note.type_f.value,
-                    "x": np.array([note.get_virtual_x()], dtype=np.float32),
-                    "y": np.array([note.get_virtual_y()], dtype=np.float32),
-                }
-            )
-            for note in self.upcoming_notes[:5]
-        ])
+        return tuple(
+            [
+                OrderedDict(
+                    {
+                        "time": np.array([note.time], dtype=np.float32),
+                        "type": note.type_f.value,
+                        "x": np.array([note.get_virtual_x()], dtype=np.float32),
+                        "y": np.array([note.get_virtual_y()], dtype=np.float32),
+                    }
+                )
+                for note in self.upcoming_notes[:5]
+            ]
+        )
+
+    def _curve(self):
+        if self.curve is None:
+            return [0] * 8
+        curve = [point.get_virtual_x() for point in self.curve.curve_points] + [
+            point.get_virtual_y() for point in self.curve.curve_points
+        ]
+        if len(curve) <= 8:
+            for _ in range(8 - len(curve)):
+                curve.append(0)
+        return np.array(curve, dtype=np.float32)
 
     def as_dict(self) -> OrderedDict:
         return OrderedDict(
@@ -72,6 +87,7 @@ class ObservationSpace:
                 "x": np.array([int(self.mouse_pos[0])], dtype=np.float32),
                 "y": np.array([int(self.mouse_pos[1])], dtype=np.float32),
                 "upcoming_notes": self._upcoming_notes(),
+                "curve": self._curve(),
             }
         )
 
@@ -90,6 +106,7 @@ class Info:
                 "accuracy": self.accuracy,
             }
         )
+
 
 class OsuPy:
     def __init__(
@@ -156,7 +173,7 @@ class OsuPy:
             self.hold = True
         self.check_misses()
         self.check_curve()
-        self.accuracy = self.notes_hit / max(1, self.notes_len)
+        self.accuracy = max(5, self.notes_hit) / max(5, self.notes_len) * 100
         if not action.click and self.hold:
             self.hold = False
         self.effects = [effect for effect in self.effects if not effect.is_finished()]
@@ -172,7 +189,6 @@ class OsuPy:
         if self.hp <= 0 or len(self.upcoming_notes) == 0:
             self.stop_game()
             done = True
-
 
         observation = self.get_observation()
         reward = self.get_reward()
@@ -254,7 +270,6 @@ class OsuPy:
                 if score >= 300:
                     self.notes_hit += 1
 
-
     def calculate_curve_point(self, note: Note, progress: float) -> Tuple[int, int]:
         points = [(note.get_virtual_x(), note.get_virtual_y())] + [
             (p.get_virtual_x(), p.get_virtual_y()) for p in note.curve_points
@@ -276,7 +291,7 @@ class OsuPy:
             self.score += score
             if score == 300:
                 self.notes_hit += 1
-            
+
             self.hp = min(200, self.hp + 20)
             self.upcoming_notes.remove(note)
 
@@ -308,12 +323,26 @@ class OsuPy:
             mouse_pos=self.mouse,
             upcoming_notes=[note for note in self.upcoming_notes[:5]],
             hp=self.hp,
+            curve=self.curve_to_follow,
             score=self.score,
             accuracy=self.accuracy,
         ).as_dict()
 
+    def _distance_from_next_note(self) -> float:
+        if len(self.upcoming_notes) == 0:
+            return 0
+        return math.sqrt(
+            (self.upcoming_notes[0].get_virtual_x() - self.mouse[0]) ** 2
+            + (self.upcoming_notes[0].get_virtual_y() - self.mouse[1]) ** 2
+        )
+
     def get_reward(self) -> float:
-        return (self.score - self.last_score) + (self.accuracy - self.last_accuracy) * 10 + (self.hp - self.last_hp) / 10
+        return (
+            ((self.score - self.last_score) * 500)
+            + (self.accuracy - self.last_accuracy) * 10
+            + (self.hp - self.last_hp) / 10
+            - ((self._distance_from_next_note() - 100) / 100)
+        )
 
     def render(self) -> None:
         if self.state == States.HUMAN:
@@ -333,6 +362,7 @@ class OsuPy:
         self.game_time = 0
         self.last_update_time = time.time()
         self.score = 0
+        self.last_score = 0
         self.accuracy = 0
         self.hp = 200
         self.last_hp = 200

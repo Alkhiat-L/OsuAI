@@ -21,7 +21,7 @@ from osupy.Note import Note
 from osupy.NoteType import NoteType
 from osupy.perfect_circle import perfect_circle
 
-from .render import Renderer
+from render import Renderer
 
 
 class States(Enum):
@@ -90,7 +90,6 @@ class Info:
                 "accuracy": self.accuracy,
             }
         )
-
 
 class OsuPy:
     def __init__(
@@ -218,26 +217,29 @@ class OsuPy:
                 (current_point[0] - self.mouse[0]) ** 2
                 + (current_point[1] - self.mouse[1]) ** 2
             )
-            if distance <= 200:
+            score = 0
+            if distance >= 80 or not self.hold:
+                self.curve_to_follow = None
+            if progress >= 0.5:
+                score = 50
+            if progress >= 0.7:
+                score = 100
+            if progress >= 0.9:
+                score = 300
+                self.curve_to_follow = None
+
+            if self.curve_to_follow is None:
                 self.effects.append(
                     e.ScorePopup(
                         position=(
                             current_point[0],
                             current_point[1],
                         ),
-                        score=5,
+                        score=score,
                     )
                 )
-                self.score += 5
-                self.accuracy = (
-                    self.accuracy * (len(self.notes) - len(self.upcoming_notes)) + 100
-                ) / (len(self.notes) - len(self.upcoming_notes) + 1)
-            else:
-                self.accuracy = (
-                    self.accuracy * (len(self.notes) - len(self.upcoming_notes))
-                ) / (len(self.notes) - len(self.upcoming_notes) + 1)
-            if progress >= 0.9:
-                self.curve_to_follow = None
+                self.score = score
+
 
     def calculate_curve_point(self, note: Note, progress: float) -> Tuple[int, int]:
         points = [(note.get_virtual_x(), note.get_virtual_y())] + [
@@ -255,18 +257,20 @@ class OsuPy:
         return points[int(len(points) * progress)]
 
     def hit_note(self, note: Note, score: int = 300) -> None:
-        self.score += score
-        self.accuracy = (
-            self.accuracy * (len(self.notes) - len(self.upcoming_notes)) + 100
-        ) / (len(self.notes) - len(self.upcoming_notes) + 1)
-        self.hp = min(200, self.hp + 20)
-        self.upcoming_notes.remove(note)
 
-        self.effects.append(
-            e.ScorePopup(
-                position=(note.get_virtual_x(), note.get_virtual_y()), score=score
+        if not note.type_f == NoteType.SLIDER:
+            self.score += score
+            self.accuracy = (
+                self.accuracy * (len(self.notes) - len(self.upcoming_notes)) + 100
+            ) / (len(self.notes) - len(self.upcoming_notes) + 1)
+            self.hp = min(200, self.hp + 20)
+            self.upcoming_notes.remove(note)
+
+            self.effects.append(
+                e.ScorePopup(
+                    position=(note.get_virtual_x(), note.get_virtual_y()), score=score
+                )
             )
-        )
 
         if note.type_f == NoteType.SLIDER:
             self.effects.append(

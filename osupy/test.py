@@ -11,19 +11,18 @@ def env_creator(_):
 if __name__ == '__main__':
     env = gym.make('osupy/OsuPyEnv-v0', render_mode='human')
     wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
-    clipped = gym.wrappers.ClipAction(wrapped_env)  # type: ignore
-    model = PPO(policy='MlpPolicy', env=clipped, verbose=1)
+    model = PPO(policy='MlpPolicy', env=wrapped_env, verbose=1)
     i = 0
     try:
         model.load('osupy-ppo')
     except FileNotFoundError:
         pass
     while True:
-        obs, info = clipped.reset()
+        obs, info = wrapped_env.reset()
         done = False
         while not done:
             action, _ = model.predict(obs)
-            obs, rewards, done, _, info = clipped.step(action)
+            obs, rewards, done, _, info = wrapped_env.step(action)
             i += 1
             if i % 100 == 0:
                 print(f'Episode {i} reward: {rewards}')

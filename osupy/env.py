@@ -33,9 +33,9 @@ class OsuPyEnv(gym.Env):
         )
         self._action_space = gym.spaces.Dict(
             {
-                "x": gym.spaces.Box(low=0, high=800, shape=(1,)),
-                "y": gym.spaces.Box(low=0, high=600, shape=(1,)),
-                "click": gym.spaces.Box(low=0, high=2, shape=(1,)),
+                "x": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
+                "y": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
+                "click": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
             }
         )
 
@@ -51,7 +51,7 @@ class OsuPyEnv(gym.Env):
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
         action = gym.spaces.unflatten(self._action_space, action)  # type: ignore
 
-        return ActionSpace(action["x"], action["y"], action["click"] >= 1)
+        return ActionSpace(action["x"]*400, action["y"]*300, action["click"] >= 1)
 
     @override
     def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:

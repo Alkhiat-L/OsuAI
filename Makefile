@@ -23,6 +23,9 @@ debug: test init
 env: test init
 	$(PYTHON) -m osupy.env
 
+model: test init
+	$(PYTHON) -m osupy.model
+
 test: init
 	pytest tests
 

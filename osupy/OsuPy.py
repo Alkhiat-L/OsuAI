@@ -1,10 +1,12 @@
+from collections import OrderedDict
 import math
 import sys
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
+import numpy as np
 import pygame
 
 import osupy.effect as e
@@ -37,15 +39,57 @@ class ActionSpace:
     def mouse_pos(self) -> tuple[int, int]:
         return (self.x, self.y)
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 @dataclass
 class ObservationSpace:
     game_time: float
     mouse_pos: Tuple[int, int]
-    upcoming_notes: List[Tuple[int, int, int, NoteType]]  # x, y, time, type
+    upcoming_notes: List[Note]
     hp: int
     score: int
     accuracy: float
+
+    def _upcoming_notes(self) -> tuple[OrderedDict, ...]:
+        return tuple([
+            OrderedDict(
+                {
+                    "time": np.array([note.time], dtype=np.float32),
+                    "type": note.type_f.value,
+                    "x": np.array([note.get_virtual_x()], dtype=np.float32),
+                    "y": np.array([note.get_virtual_y()], dtype=np.float32),
+                }
+            )
+            for note in self.upcoming_notes[:5]
+        ])
+
+    def as_dict(self) -> OrderedDict:
+        return OrderedDict(
+            {
+                "game_time": np.array([self.game_time], dtype=np.float32),
+                "x": np.array([int(self.mouse_pos[0])], dtype=np.float32),
+                "y": np.array([int(self.mouse_pos[1])], dtype=np.float32),
+                "upcoming_notes": self._upcoming_notes(),
+            }
+        )
+
+
+@dataclass
+class Info:
+    hp: float
+    score: int
+    accuracy: float
+
+    def as_dict(self) -> OrderedDict:
+        return OrderedDict(
+            {
+                "hp": self.hp,
+                "score": self.score,
+                "accuracy": self.accuracy,
+            }
+        )
 
 
 class OsuPy:
@@ -97,7 +141,8 @@ class OsuPy:
         #     print(f"Warning: Audio file not found at {audio_path}")
         self.reset()
 
-    def step(self, action: ActionSpace) -> Tuple[ObservationSpace, float, bool, dict]:
+    def step(self, action: ActionSpace) -> Tuple[dict[str, Any], float, bool, dict]:
+        action = ActionSpace(action["x"], action["y"], action["click"])
         self.mouse = action.mouse_pos()
 
         if action.click and not self.hold:
@@ -129,7 +174,6 @@ class OsuPy:
         return observation, reward, done, {}
 
     def check_hit(self) -> None:
-
         for note in self.upcoming_notes:
             distance = math.sqrt(
                 (note.get_virtual_x() - self.mouse[0]) ** 2
@@ -161,7 +205,6 @@ class OsuPy:
         if self.curve_to_follow is None:
             return
         if self.curve_to_follow.type_f == NoteType.SLIDER:
-
             if self.curve_to_follow.duration is None:
                 return
             progress = min(
@@ -240,18 +283,15 @@ class OsuPy:
         ) / (len(self.notes) - len(self.upcoming_notes) + 1)
         self.hp = max(0, self.hp - 10)
 
-    def get_observation(self) -> ObservationSpace:
+    def get_observation(self) -> OrderedDict:
         return ObservationSpace(
             game_time=self.game_time,
             mouse_pos=self.mouse,
-            upcoming_notes=[
-                (note.get_virtual_x(), note.get_virtual_y(), note.time, note.type_f)
-                for note in self.upcoming_notes[:5]
-            ],
+            upcoming_notes=[note for note in self.upcoming_notes[:5]],
             hp=self.hp,
             score=self.score,
             accuracy=self.accuracy,
-        )
+        ).as_dict()
 
     def get_reward(self) -> float:
         return self.score / 300 + self.accuracy / 100 + self.hp / 200
@@ -269,7 +309,7 @@ class OsuPy:
             self.game_time += 1
             self.delta = 1
 
-    def reset(self) -> ObservationSpace:
+    def reset(self) -> dict[str, Any]:
         self.upcoming_notes = self.notes.copy()
         self.game_time = 0
         self.last_update_time = time.time()

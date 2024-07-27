@@ -123,11 +123,7 @@ class OsuPy:
         if self.hp <= 0 or len(self.upcoming_notes) == 0:
             self.stop_game()
             done = True
-        if self.state == States.HUMAN:
-            self.render()
-        if self.state == States.TRAIN:
-            self.game_time += 1
-            self.delta = 1
+
         observation = self.get_observation()
         reward = self.get_reward()
 
@@ -262,13 +258,17 @@ class OsuPy:
         return self.score / 300 + self.accuracy / 100 + self.hp / 200
 
     def render(self) -> None:
-        self.renderer.render()
-        current_time = time.time()
-        self.delta = (
-            current_time - self.last_update_time
-        ) * 1000  # Convert to milliseconds
-        self.game_time += self.delta
-        self.last_update_time = current_time
+        if self.state == States.HUMAN:
+            self.renderer.render()
+            current_time = time.time()
+            self.delta = (
+                current_time - self.last_update_time
+            ) * 1000  # Convert to milliseconds
+            self.game_time += self.delta
+            self.last_update_time = current_time
+        if self.state == States.TRAIN:
+            self.game_time += 1
+            self.delta = 1
 
     def reset(self) -> ObservationSpace:
         self.upcoming_notes = self.notes.copy()
@@ -302,6 +302,7 @@ if __name__ == "__main__":
         observation, reward, done, _ = osu.step(
             ActionSpace(mouse[0], mouse[1], pressed_keys[0])
         )
+        osu.render()
         if done:
             osu.reset()
             osu.start_game()

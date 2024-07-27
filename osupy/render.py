@@ -27,6 +27,8 @@ class Renderer:
     def render(self) -> None:
         if self.surface is None:
             self.surface = pygame.display.set_mode((self.width, self.height))
+            pygame.display.set_caption("OsuPy")
+
         # Background
 
         self.surface.fill((25, 25, 35))

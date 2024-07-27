@@ -133,6 +133,7 @@ class OsuPy:
         self.hold = False
         self.hit_window = 300  # ms
         self.curve_to_follow: Optional[Note] = None
+        self.near_curve = 0
         # pygame.mixer.init()
         # self.audio: Optional[pygame.mixer.Sound] = None
         # self.audio_start_time = 0
@@ -173,9 +174,11 @@ class OsuPy:
             self.hold = True
         self.check_misses()
         self.check_curve()
-        self.accuracy = max(5, self.notes_hit) / max(5, self.notes_len) * 100
+        self.accuracy = max(1, self.notes_hit) / max(1, self.notes_len)
         if not action.click and self.hold:
             self.hold = False
+        if self.curve_to_follow is None:
+            self.near_curve = 0
         self.effects = [effect for effect in self.effects if not effect.is_finished()]
         for effect in self.effects:
             effect.step(self.delta)
@@ -192,6 +195,26 @@ class OsuPy:
 
         observation = self.get_observation()
         reward = self.get_reward()
+        if reward > 100:
+            print(
+                "score",
+                self.score,
+                "last_score",
+                self.last_score,
+                "accuracy",
+                self.accuracy,
+                "last_accuracy",
+                self.last_accuracy,
+                "hp",
+                self.hp,
+                "last_hp",
+                self.last_hp,
+                "distance",
+                self._distance_from_next_note(),
+                "near_curve",
+                self.near_curve,
+            )
+            print(f"reward: {reward}")
 
         self.last_accuracy = self.accuracy
         self.last_score = self.score
@@ -245,14 +268,18 @@ class OsuPy:
                 + (current_point[1] - self.mouse[1]) ** 2
             )
             score = 0
-            if distance >= 80 or not self.hold:
+            if distance >= 100 or not self.hold:
                 self.curve_to_follow = None
+            self.near_curve = 1
             if progress >= 0.5 and progress < 0.7:
                 score = 50
+                self.near_curve = 2
             if progress >= 0.7 and progress < 0.9:
                 score = 100
+                self.near_curve = 3
             if progress >= 0.9:
                 score = 300
+                self.near_curve = 10
                 self.curve_to_follow = None
 
             if self.curve_to_follow is None:
@@ -336,10 +363,11 @@ class OsuPy:
 
     def get_reward(self) -> float:
         return (
-            ((self.score - self.last_score) * 500)
+            ((self.score - self.last_score) * 50)
             + (self.accuracy - self.last_accuracy) * 10
             + (self.hp - self.last_hp) / 10
-            - ((self._distance_from_next_note() - 100) / 100)
+            - ((self._distance_from_next_note() - 100) / 1000)
+            + (self.near_curve) / 10
         )
 
     def render(self) -> None:
@@ -360,7 +388,9 @@ class OsuPy:
         self.game_time = 0
         self.last_update_time = time.time()
         self.score = 0
-        self.accuracy = 0
+        self.last_score = 0
+        self.accuracy = 1
+        self.last_accuracy = 1
         self.hp = 200
         self.last_hp = 200
         self.last_time = 0

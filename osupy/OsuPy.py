@@ -69,21 +69,21 @@ class OsuPy:
         self.hold = False
         self.hit_window = 300  # ms
         self.curve_to_follow: Optional[Note] = None
-        pygame.mixer.init()
-        self.audio: Optional[pygame.mixer.Sound] = None
-        self.audio_start_time = 0
+        # pygame.mixer.init()
+        # self.audio: Optional[pygame.mixer.Sound] = None
+        # self.audio_start_time = 0
 
     def start_game(self) -> None:
         self.state = States.HUMAN
         self.last_update_time = time.time()
-        self.audio_start_time = time.time()
-        if self.audio:
-            self.audio.set_volume(0.05)
-            self.audio.play()
+        # self.audio_start_time = time.time()
+        # if self.audio:
+        #     self.audio.set_volume(0.05)
+        #     self.audio.play()
 
     def stop_game(self) -> None:
-        if self.audio:
-            self.audio.stop()
+        # if self.audio:
+        #     self.audio.stop()
         self.state = States.IDLE
 
     def load_beatmap(self, file_path: str) -> None:

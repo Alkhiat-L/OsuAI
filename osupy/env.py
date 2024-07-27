@@ -32,3 +32,20 @@ class OsuPyEnv(gym.Env):
 
     def close(self):
         self.osu.stop_game()
+
+
+gym.register("osupy/OsuPyEnv-v0", "osupy:OsuPyEnv")
+
+if __name__ == "__main__":
+    print("Starting...")
+    env = gym.make("osupy/OsuPyEnv-v0")
+    env.reset()
+    for _ in range(300):
+        observation, reward, terminated, truncated, info = env.step(
+            env.action_space.sample()
+        )
+
+        if terminated:
+            print("Terminated")
+            env.reset()
+    env.close()

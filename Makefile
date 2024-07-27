@@ -1,5 +1,3 @@
-SHELL := /bin/bash
-
 PIP=uv pip
 
 PYTHON=python
@@ -21,6 +19,9 @@ start: test init
 
 debug: test init
 	$(PYTHON) -m debugpy --listen 5678 --wait-for-client -m osupy.OsuPy
+
+env: test init
+	$(PYTHON) -m osupy.env
 
 test: init
 	pytest tests

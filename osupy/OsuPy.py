@@ -1,5 +1,4 @@
 import math
-import os
 import sys
 import time
 from dataclasses import dataclass
@@ -89,13 +88,13 @@ class OsuPy:
     def load_beatmap(self, file_path: str) -> None:
         self.beatmap = parse_beatmap(file_path)
         self.notes = self.beatmap.notes
-        audio_path = os.path.join(
-            os.path.dirname(file_path), self.beatmap.audio_filename
-        )
-        if os.path.exists(audio_path):
-            self.audio = pygame.mixer.Sound(audio_path)
-        else:
-            print(f"Warning: Audio file not found at {audio_path}")
+        # audio_path = os.path.join(
+        #     os.path.dirname(file_path), self.beatmap.audio_filename
+        # )
+        # if os.path.exists(audio_path):
+        #     self.audio = pygame.mixer.Sound(audio_path)
+        # else:
+        #     print(f"Warning: Audio file not found at {audio_path}")
         self.reset()
 
     def step(self, action: ActionSpace) -> Tuple[ObservationSpace, float, bool, dict]:

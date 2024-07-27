@@ -311,9 +311,9 @@ class OsuPy:
             self.curve_to_follow = note
 
     def miss(self) -> None:
+        self.notes_len += 1
         self.accuracy = self.notes_hit / self.notes_len
         self.hp = max(0, self.hp - 10)
-        self.notes_len += 1
 
     def get_observation(self) -> OrderedDict:
         return ObservationSpace(
@@ -360,9 +360,7 @@ class OsuPy:
         self.game_time = 0
         self.last_update_time = time.time()
         self.score = 0
-        self.last_score = 0
-        self.accuracy = 1
-        self.last_accuracy = 1
+        self.accuracy = 0
         self.hp = 200
         self.last_hp = 200
         self.last_time = 0

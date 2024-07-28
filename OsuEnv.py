@@ -1,3 +1,9 @@
+"""
+Versão antiga do projeto, que foi feita para funcionar gravando a tela do jogo original,
+essa versão não está mais sendo atualizada. A versão atualizada do projeto está na pasta
+'osupy'.
+"""
+
 import json
 import time
 from urllib import request
@@ -143,18 +149,14 @@ class OsuEnv(gym.Env):
 
         # Convert binary action to x, y coordinates and click
         x_coord = self._binary_to_decimal(binary_action[:x_bits])
-        y_coord = self._binary_to_decimal(binary_action[x_bits:x_bits+y_bits])
+        y_coord = self._binary_to_decimal(binary_action[x_bits : x_bits + y_bits])
         mouse_click = binary_action[-1]
 
         # Ensure coordinates are within screen bounds
         x_coord = min(x_coord, self.screen_width - 1)
         y_coord = min(y_coord, self.screen_height - 1)
 
-        return {
-            "x": x_coord,
-            "y": y_coord,
-            "click": bool(mouse_click)
-        }
+        return {"x": x_coord, "y": y_coord, "click": bool(mouse_click)}
 
     def _calculate_reward(self, info):
         reward = 0
@@ -265,7 +267,6 @@ class OsuEnv(gym.Env):
 gym.register("OsuAi/OsuEnv-v0", "OsuEnv:OsuEnv")
 
 if __name__ == "__main__":
-
     print("Starting...")
     env = gym.make("OsuAi/OsuEnv-v0")
     env.reset()

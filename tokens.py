@@ -1,3 +1,9 @@
+"""
+Versão antiga do projeto, que foi feita para funcionar gravando a tela do jogo original,
+essa versão não está mais sendo atualizada. A versão atualizada do projeto está na pasta
+'osupy'.
+"""
+
 import json
 import time
 from urllib import request
@@ -19,10 +25,10 @@ def get_status() -> str:
         data = json.loads(websocket.recv())
         status_id = int(data["status"])
         if status_id == 1:
-            return 'Listening'
+            return "Listening"
         if status_id == 2:
-            return 'Playing'
-    return 'Error'
+            return "Playing"
+    return "Error"
 
 
 if __name__ == "__main__":
@@ -31,8 +37,9 @@ if __name__ == "__main__":
     print("Seconds since start: ", time.time() - start_time)
     print(get_status())
 
-#2 == 'Playing'
-#1 == Listening
+
+# 2 == 'Playing'
+# 1 == Listening
 def get_combo() -> int:
     with connect("ws://localhost:20727/tokens?updatesPerSecond=60") as websocket:
         websocket.send(json.dumps(["combo"]))
@@ -79,4 +86,3 @@ def get_hp() -> float:
         data = json.loads(websocket.recv())
         hp = float(data["playerHp"])
     return hp
-

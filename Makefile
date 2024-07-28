@@ -1,4 +1,4 @@
-PIP=uv pip
+PIP=pip
 
 PYTHON=python
 

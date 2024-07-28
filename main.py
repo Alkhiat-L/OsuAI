@@ -1,3 +1,9 @@
+"""
+Versão antiga do projeto, que foi feita para funcionar gravando a tela do jogo original,
+essa versão não está mais sendo atualizada. A versão atualizada do projeto está na pasta
+'osupy'.
+"""
+
 import gymnasium as gym
 from OsuEnv import OsuEnv as OsuEnv
 

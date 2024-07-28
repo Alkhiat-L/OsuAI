@@ -1,16 +1,23 @@
-from typing import Any, Optional, override, SupportsFloat
+from typing import Any, Dict, Optional, override, SupportsFloat
 
 import gymnasium as gym
-from matplotlib.pylab import f
+
 import numpy as np
+import numpy.typing as npt
 
 from osupy.OsuPy import ActionSpace, OsuPy, States
+from osupy.typing import ObservationType
 
 
-class OsuPyEnv(gym.Env):
+ObsType = ObservationType | Dict[str, Any]
+ActType = npt.NDArray[np.float32] | Dict[str, Any]
+
+
+class OsuPyEnv(gym.Env[ObsType, ActType]):
     metadata = {"render_modes": ["human", "rgb_array"]}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode: Optional[str] = None):
+        super(OsuPyEnv, self).__init__()
         self.osu = OsuPy()
         self.observation_space = gym.spaces.Dict(
             {
@@ -35,13 +42,13 @@ class OsuPyEnv(gym.Env):
         )
         self._action_space = gym.spaces.Dict(
             {
-                "x": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
-                "y": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
-                "click": gym.spaces.Box(low=0, high=2, shape=(1,), dtype=np.float32),
+                "x": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
+                "y": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
+                "click": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
             }
         )
 
-        self.action_space = gym.spaces.flatten_space(self._action_space)
+        self.action_space = gym.spaces.flatten_space(self._action_space)  # type: ignore
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -52,19 +59,24 @@ class OsuPyEnv(gym.Env):
 
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
         action = gym.spaces.unflatten(self._action_space, action)  # type: ignore
+        speed = 100
 
-        return ActionSpace(action["x"] * 400, action["y"] * 300, action["click"] >= 1)
+        return ActionSpace(
+            action["x"] * speed, action["y"] * speed, action["click"] >= 0
+        )
 
     @override
-    def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(
+        self, action: ActType
+    ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
         observation, reward, done, info = self.osu.step(self._parse_action(action))  # type: ignore
         self.render()
         return observation, reward, done, False, info
 
     @override
     def reset(
-        self, *, seed: Optional[int] = None, options: Optional[dict] = None
-    ) -> tuple[Any, dict[str, Any]]:
+        self, *, seed: Optional[int] = None, options: Optional[dict[str, Any]] = None
+    ) -> tuple[ObsType, dict[str, Any]]:
         super().reset(seed=seed)
         self.osu.load_beatmap("beatmap.osu")
         self.osu.reset()

@@ -1,8 +1,9 @@
 import math
+from typing import Optional
 
 
 def perfect_circle(
-    vertices: list[tuple[int, int]], numPoints=None
+    vertices: list[tuple[int, int]], numPoints: Optional[int] = None
 ) -> list[tuple[int, int]]:
     if numPoints is None:
         numPoints = 30

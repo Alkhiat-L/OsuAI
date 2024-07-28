@@ -26,6 +26,9 @@ env: test init
 model: test init
 	$(PYTHON) -m osupy.model
 
+debug_model: test init
+	$(PYTHON) -m debugpy --listen 5678 --wait-for-client -m osupy.model
+
 model_test: test init
 	$(PYTHON) -m osupy.test
 

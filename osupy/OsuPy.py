@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, List, Optional, Tuple
 
-from matplotlib.pylab import f
 import numpy as np
 import pygame
 
@@ -33,12 +32,9 @@ class States(Enum):
 
 @dataclass
 class ActionSpace:
-    x: int
-    y: int
+    delta_x: float
+    delta_y: float
     click: bool
-
-    def mouse_pos(self) -> tuple[int, int]:
-        return (self.x, self.y)
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
@@ -47,14 +43,14 @@ class ActionSpace:
 @dataclass
 class ObservationSpace:
     game_time: float
-    mouse_pos: Tuple[int, int]
+    mouse_pos: pygame.math.Vector2
     upcoming_notes: List[Note]
     curve: Optional[Note]
     hp: int
     score: int
     accuracy: float
 
-    def _upcoming_notes(self) -> tuple[OrderedDict, ...]:
+    def _upcoming_notes(self) -> tuple[OrderedDict[str, Any], ...]:
         upcoming_notes = [
             OrderedDict(
                 {
@@ -96,7 +92,7 @@ class ObservationSpace:
                 curve.append(0)
         return np.array(curve, dtype=np.float32)
 
-    def as_dict(self) -> OrderedDict:
+    def as_dict(self) -> OrderedDict[str, Any]:
         return OrderedDict(
             {
                 "game_time": np.array([self.game_time], dtype=np.float32),
@@ -114,7 +110,7 @@ class Info:
     score: int
     accuracy: float
 
-    def as_dict(self) -> OrderedDict:
+    def as_dict(self) -> OrderedDict[str, Any]:
         return OrderedDict(
             {
                 "hp": self.hp,
@@ -144,7 +140,7 @@ class OsuPy:
         self.game_time = 0  # Time since the start of the beatmap
         self.last_update_time = 0  # Last time the game state was updated
         self.state: States = States.IDLE
-        self.mouse: tuple[int, int] = (0, 0)
+        self.mouse: pygame.math.Vector2 = pygame.math.Vector2(0, 0)
         self.delta: float = 0
         self.hold = False
         self.hit_window = 300  # ms
@@ -179,13 +175,24 @@ class OsuPy:
         #     print(f"Warning: Audio file not found at {audio_path}")
         self.reset()
 
-    def step(self, action: ActionSpace) -> Tuple[dict[str, Any], float, bool, dict]:
-        action = ActionSpace(action["x"], action["y"], action["click"])
-        self.mouse = (int(action.x), int(action.y))
+    def step(
+        self, action: ActionSpace
+    ) -> Tuple[dict[str, Any], float, bool, dict[str, Any]]:
+        action = ActionSpace(action.delta_x, action.delta_y, action["click"])
+        self.mouse.x += action.delta_x
+        self.mouse.y += action.delta_y
+        if self.mouse.x < 0:
+            self.mouse.x = 0
+        if self.mouse.y < 0:
+            self.mouse.y = 0
+        if self.mouse.x > 800:
+            self.mouse.x = 800
+        if self.mouse.y > 600:
+            self.mouse.y = 600
 
         if action.click and not self.hold:
-            self.effects.append(e.SplashEffect(position=self.mouse))
-            self.effects.append(e.ParticleEffect(position=self.mouse))
+            self.effects.append(e.SplashEffect(position=self.mouse.copy()))
+            self.effects.append(e.ParticleEffect(position=self.mouse.copy()))
             self.check_hit()
             self.hold = True
         self.check_misses()
@@ -211,7 +218,7 @@ class OsuPy:
 
         observation = self.get_observation()
         reward = self.get_reward()
-        if reward > 26000:
+        if reward > 1000:
             print(
                 "score",
                 self.score,
@@ -233,14 +240,15 @@ class OsuPy:
                 self.game_time,
             )
             print(f"reward: {reward}")
+            print("Por quê?")
 
         self.last_accuracy = self.accuracy
         self.last_score = self.score
         self.last_hp = self.hp
 
         if self.state != States.HUMAN:
-            self.game_time += 1000 / 2
-            self.delta = 1000 / 2
+            self.game_time += 1000 / 30
+            self.delta = 1000 / 30
 
         return (
             observation,
@@ -376,10 +384,10 @@ class OsuPy:
         self.accuracy = self.notes_hit / self.notes_len
         self.hp = max(0, self.hp - 10)
 
-    def get_observation(self) -> OrderedDict:
+    def get_observation(self) -> OrderedDict[str, Any]:
         return ObservationSpace(
             game_time=self.game_time,
-            mouse_pos=self.mouse,
+            mouse_pos=self.mouse.copy(),
             upcoming_notes=[note for note in self.upcoming_notes[:5]],
             hp=self.hp,
             curve=self.curve_to_follow,
@@ -397,11 +405,12 @@ class OsuPy:
 
     def get_reward(self) -> float:
         return (
-            ((self.score - self.last_score) * 50)
-            + (self.accuracy - self.last_accuracy) * 10
-            + (self.hp - self.last_hp) / 10
-            - ((self._distance_from_next_note() - 100) / 1000)
-            + (self.near_curve) / 10
+            ((self.score - self.last_score) / 300)
+            + ((self.accuracy - self.last_accuracy) * 10)
+            + ((self.hp - self.last_hp) / 10)
+            - ((self._distance_from_next_note() - 50) / 1000)
+            + ((self.near_curve) / 10)
+            + ((self.game_time - 10000) / 1000)
         )
 
     def render(self) -> None:
@@ -440,6 +449,7 @@ if __name__ == "__main__":
     osu = OsuPy()
     osu.load_beatmap("beatmap.osu")
     osu.start_game()
+    lastMousePos = pygame.mouse.get_pos()
 
     while True:
         for event in pygame.event.get():
@@ -449,8 +459,11 @@ if __name__ == "__main__":
         pressed_keys = pygame.mouse.get_pressed()
         mouse = pygame.mouse.get_pos()
         observation, reward, done, _ = osu.step(
-            ActionSpace(mouse[0], mouse[1], pressed_keys[0])
+            ActionSpace(
+                mouse[0] - lastMousePos[0], mouse[1] - lastMousePos[1], pressed_keys[0]
+            )
         )
+        lastMousePos = mouse
         osu.render()
         if done:
             osu.reset()

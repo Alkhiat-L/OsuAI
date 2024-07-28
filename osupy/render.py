@@ -54,7 +54,7 @@ class Renderer:
         self.draw_ui()
 
         pygame.display.update()
-        self.clock.tick(60)
+        self.clock.tick(30)
 
     def draw_grid(self) -> None:
         if not self.surface:
@@ -158,7 +158,7 @@ class Renderer:
     def draw_ui(self) -> None:
         if not self.surface:
             return
-        score_text = self.font.render(
+        score_text: pygame.Surface = self.font.render(
             f"Score: {self.parent.score}", True, (255, 255, 255)
         )
         accuracy_text = self.font.render(

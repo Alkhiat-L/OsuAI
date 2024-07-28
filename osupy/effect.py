@@ -27,7 +27,7 @@ class Effect:
 
 
 class SplashEffect(Effect):
-    def __init__(self, position: tuple[int, int], duration: int = 1000):
+    def __init__(self, position: pygame.math.Vector2, duration: int = 1000):
         super().__init__(duration)
         self.position = position
 
@@ -97,7 +97,7 @@ class SliderEffect(Effect):
 
 
 class ParticleEffect(Effect):
-    def __init__(self, position: tuple[int, int], duration: int = 1000):
+    def __init__(self, position: pygame.math.Vector2, duration: int = 1000):
         super().__init__(duration)
         self.position = position
         self.particles = [

@@ -1,10 +1,7 @@
 import gymnasium as gym
-from matplotlib import pyplot as plt
-import numpy as np
-from sympy import true
 from osupy.env import OsuPyEnv as OsuPyEnv
 
-from stable_baselines3 import PPO
+from stable_baselines3 import A2C, PPO
 from stable_baselines3.common.callbacks import (
     EvalCallback,
     CheckpointCallback,
@@ -12,8 +9,8 @@ from stable_baselines3.common.callbacks import (
 )
 
 
-def env_creator(_):
-    env = gym.make("osupy/OsuPyEnv-v0")
+def env_creator(_) -> OsuPyEnv:
+    env: OsuPyEnv = gym.make("osupy/OsuPyEnv-v0")  # type: ignore
     env.reset()
     return env
 
@@ -31,7 +28,7 @@ if __name__ == "__main__":
 
     callbacks.append(
         CheckpointCallback(
-            save_freq=20000,
+            save_freq=10000,
             save_path="./logs/",
             name_prefix="osupy-ppo",
         )
@@ -42,20 +39,12 @@ if __name__ == "__main__":
             eval_env,
             best_model_save_path="./logs/",
             log_path="./logs/",
-            eval_freq=10000,
-            n_eval_episodes=10,
+            eval_freq=5000,
+            n_eval_episodes=20,
             deterministic=True,
         )
     )
 
     callbacks.append(ProgressBarCallback())
 
-    try:
-        model.load("osupy-ppo")
-    except FileNotFoundError:
-        pass
-    while True:
-        try:
-            model.learn(total_timesteps=400000, callback=callbacks)
-        except KeyboardInterrupt:
-            break
+    model.learn(total_timesteps=1000000, callback=callbacks)

@@ -1,5 +1,8 @@
+from typing import Optional
+
+
 def bezier_curve(
-    vertices: list[tuple[int, int]], numPoints=None
+    vertices: list[tuple[int, int]], numPoints: Optional[int] = None
 ) -> list[tuple[int, int]]:
     if numPoints is None:
         numPoints = 30
@@ -53,7 +56,7 @@ def bezier_curve(
 
     result.append((int(pointX), int(pointY)))
 
-    for i in range(numSteps):
+    for _ in range(numSteps):
         pointX += firstFDX
         pointY += firstFDY
 

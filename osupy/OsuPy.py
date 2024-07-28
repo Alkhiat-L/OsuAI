@@ -195,7 +195,7 @@ class OsuPy:
 
         observation = self.get_observation()
         reward = self.get_reward()
-        if reward > 100:
+        if reward > 26000:
             print(
                 "score",
                 self.score,
@@ -222,10 +222,20 @@ class OsuPy:
         self.last_score = self.score
         self.last_hp = self.hp
 
-        self.game_time += 1
-        self.delta = 1
+        self.game_time += 0.33
+        self.delta = 0.33
 
-        return observation, reward, done, {}
+        return (
+            observation,
+            reward,
+            done,
+            {
+                "accuracy": self.accuracy,
+                "score": self.score,
+                "hp": self.hp,
+                "game_time": self.game_time,
+            },
+        )
 
     def check_hit(self) -> None:
         for note in self.upcoming_notes:

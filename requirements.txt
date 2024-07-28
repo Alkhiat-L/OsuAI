@@ -1,7 +1,4 @@
 gymnasium
-dxcam
-keyboard
-mouse
 torch
 torchvision
 opencv-python

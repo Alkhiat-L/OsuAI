@@ -58,6 +58,7 @@ class OsuPyEnv(gym.Env):
     def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         observation, reward, done, info = self.osu.step(self._parse_action(action))  # type: ignore
         self.render()
+        print(observation)
         return observation, reward, done, False, info
 
     @override
@@ -67,7 +68,6 @@ class OsuPyEnv(gym.Env):
         super().reset(seed=seed)
         self.osu.load_beatmap("beatmap.osu")
         self.osu.reset()
-        self.osu.start_game()
         if self.render_mode == "human":
             self.osu.state = States.HUMAN
         assert self.observation_space.contains(self.osu.get_observation())
@@ -92,8 +92,6 @@ if __name__ == "__main__":
         observation, reward, terminated, truncated, info = env.step(
             env.action_space.sample()
         )
-        print(reward)
-
         if terminated:
             print("Terminated")
             env.reset()

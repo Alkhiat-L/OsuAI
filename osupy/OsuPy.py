@@ -222,6 +222,7 @@ class OsuPy:
         self.last_score = self.score
         self.last_hp = self.hp
 
+        print("state", self.state)
         if self.state != States.HUMAN:
             self.game_time += 1000 / 2
             self.delta = 1000 / 2
@@ -254,7 +255,9 @@ class OsuPy:
             if error <= self.hit_window * 3 and distance <= 90:
                 self.hit_note(note, 50)
                 return
-        self.miss()
+            if error <= self.hit_window * 4 and distance <= 110:
+                self.miss()
+                return
 
     def check_misses(self) -> None:
         if len(self.upcoming_notes) <= 0:

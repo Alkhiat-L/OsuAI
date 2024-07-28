@@ -1,7 +1,9 @@
 [project]
 name = "osupy"
-version = "0.0.1"
+version = "0.1.1"
 description = "A Reinforcement Learning Environment for osu!"
+readme = "README.md"
+
 
 [tool.pyright]
 reportUnknownMemberType = false

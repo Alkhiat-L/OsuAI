@@ -27,38 +27,6 @@ if __name__ == "__main__":
 
     callbacks = []
 
-    env_eval = gym.wrappers.FlattenObservation(  # type: ignore
-        gym.make("osupy/OsuPyEnv-v0")
-    )
-
-    env_show = gym.wrappers.FlattenObservation(  # type: ignore
-        gym.make("osupy/OsuPyEnv-v0", render_mode="human")
-    )
-
-    callbacks.append(
-        EvalCallback(
-            env_eval,
-            best_model_save_path="./logs/",
-            log_path="./logs/",
-            eval_freq=40000,
-            n_eval_episodes=30,  # Run 30 games
-            deterministic=False,
-            render=False,
-        )
-    )
-
-    callbacks.append(
-        EvalCallback(
-            env_show,
-            best_model_save_path="./logs/",
-            log_path="./logs/",
-            eval_freq=40000,
-            n_eval_episodes=2,  # Run 30 games
-            deterministic=False,
-            render=True,
-        )
-    )
-
     callbacks.append(
         CheckpointCallback(
             save_freq=20000,

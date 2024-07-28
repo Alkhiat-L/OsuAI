@@ -7,6 +7,7 @@ torchvision
 opencv-python
 numpy<2.0
 tqdm
+rich
 pyautogui
 psutil
 ray[rllib]

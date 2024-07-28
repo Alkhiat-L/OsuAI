@@ -27,11 +27,24 @@ if __name__ == "__main__":
 
     callbacks = []
 
+    eval_env = gym.wrappers.FlattenObservation(gym.make("osupy/OsuPyEnv-v0"))  # type: ignore
+
     callbacks.append(
         CheckpointCallback(
             save_freq=20000,
             save_path="./logs/",
             name_prefix="osupy-ppo",
+        )
+    )
+
+    callbacks.append(
+        EvalCallback(
+            eval_env,
+            best_model_save_path="./logs/",
+            log_path="./logs/",
+            eval_freq=10000,
+            n_eval_episodes=10,
+            deterministic=True,
         )
     )
 

@@ -222,7 +222,6 @@ class OsuPy:
         self.last_score = self.score
         self.last_hp = self.hp
 
-        print("state", self.state)
         if self.state != States.HUMAN:
             self.game_time += 1000 / 2
             self.delta = 1000 / 2

@@ -58,7 +58,6 @@ class OsuPyEnv(gym.Env):
     def step(self, action) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         observation, reward, done, info = self.osu.step(self._parse_action(action))  # type: ignore
         self.render()
-        print(observation)
         return observation, reward, done, False, info
 
     @override

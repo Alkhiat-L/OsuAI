@@ -1,6 +1,7 @@
 from typing import Any, Optional, override, SupportsFloat
 
 import gymnasium as gym
+from matplotlib.pylab import f
 import numpy as np
 
 from osupy.OsuPy import ActionSpace, OsuPy, States
@@ -69,7 +70,13 @@ class OsuPyEnv(gym.Env):
         self.osu.reset()
         if self.render_mode == "human":
             self.osu.state = States.HUMAN
-        assert self.observation_space.contains(self.osu.get_observation())
+        try:
+            assert self.observation_space.contains(self.osu.get_observation())
+        except AssertionError:
+            print("Observation space does not contain the observation")
+            print(f"Observation: {self.osu.get_observation()}")
+            print(f"Observation space: {self.observation_space}")
+            raise
 
         return self.osu.get_observation(), {}
 

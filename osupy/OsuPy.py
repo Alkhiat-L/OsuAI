@@ -55,25 +55,41 @@ class ObservationSpace:
     accuracy: float
 
     def _upcoming_notes(self) -> tuple[OrderedDict, ...]:
-        return tuple(
-            [
-                OrderedDict(
-                    {
-                        "time": np.array([note.time], dtype=np.float32),
-                        "type": note.type_f.value,
-                        "x": np.array([note.get_virtual_x()], dtype=np.float32),
-                        "y": np.array([note.get_virtual_y()], dtype=np.float32),
-                    }
+        upcoming_notes = [
+            OrderedDict(
+                {
+                    "time": np.array([note.time], dtype=np.float32),
+                    "type": note.type_f.value,
+                    "x": np.array([note.get_virtual_x()], dtype=np.float32),
+                    "y": np.array([note.get_virtual_y()], dtype=np.float32),
+                }
+            )
+            for note in self.upcoming_notes[:5]
+        ]
+
+        if len(upcoming_notes) < 5:
+            for _ in range(5 - len(upcoming_notes)):
+                upcoming_notes.append(
+                    OrderedDict(
+                        {
+                            "time": np.array([0], dtype=np.float32),
+                            "type": np.array([0], dtype=np.float32),
+                            "x": np.array([0], dtype=np.float32),
+                            "y": np.array([0], dtype=np.float32),
+                        }
+                    )
                 )
-                for note in self.upcoming_notes[:5]
-            ]
-        )
+        return tuple(upcoming_notes)
 
     def _curve(self):
         if self.curve is None:
             return [0] * 8
-        curve = [point.get_virtual_x() for point in self.curve.curve_points] + [
-            point.get_virtual_y() for point in self.curve.curve_points
+        curve = [
+            max(0, min(2, point.get_virtual_x() / 300))
+            for point in self.curve.curve_points
+        ] + [
+            max(0, min(2, point.get_virtual_y())) / 300
+            for point in self.curve.curve_points
         ]
         if len(curve) <= 8:
             for _ in range(8 - len(curve)):

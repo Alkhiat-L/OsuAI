@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, override, SupportsFloat
+from typing import Any, Dict, Optional, SupportsFloat
 
 import gymnasium as gym
 
@@ -65,7 +65,6 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
             action["x"] * speed, action["y"] * speed, action["click"] >= 0
         )
 
-    @override
     def step(
         self, action: ActType
     ) -> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]:
@@ -73,7 +72,6 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
         self.render()
         return observation, reward, done, False, info
 
-    @override
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[dict[str, Any]] = None
     ) -> tuple[ObsType, dict[str, Any]]:

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import override
 
 
 @dataclass
@@ -13,7 +12,6 @@ class Point:
     def get_virtual_y(self) -> int:
         return self.y + 150
 
-    @override
     def __eq__(self, value: "Point") -> bool:  # type: ignore
         return self.x == value.x and self.y == value.y
 

@@ -17,7 +17,6 @@ class Renderer:
     def __init__(self, parent: "OsuPy") -> None:
         self.parent = parent
         pygame.init()
-        pygame.mouse.set_cursor(pygame.cursors.ball)
         self.clock = pygame.time.Clock()
         self.surface: Optional[pygame.Surface] = None
         self.width = 800

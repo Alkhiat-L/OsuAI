@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Tuple
 
 from osupy.NoteType import NoteType
 
@@ -59,6 +59,9 @@ class Note:
 
     def get_virtual_y(self) -> int:
         return self.y + 150
+
+    def get_virtual_position(self) -> Tuple[int, int]:
+        return (self.get_virtual_x(), self.get_virtual_y())
 
     @staticmethod
     def from_string(string: str) -> "Note":

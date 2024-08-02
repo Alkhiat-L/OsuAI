@@ -198,6 +198,8 @@ class OsuPy:
             self.effects.append(e.ParticleEffect(position=self.mouse.copy()))
             self.check_hit()
             self.hold = True
+
+        self.renderer.point_to_render = self.upcoming_notes[0].get_virtual_position()
         self.check_misses()
         self.check_curve()
         self.accuracy = max(1, self.notes_hit) / max(1, self.notes_len)

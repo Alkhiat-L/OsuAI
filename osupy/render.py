@@ -165,7 +165,7 @@ class Renderer:
             f"Score: {self.parent.score}", True, (255, 255, 255)
         )
         accuracy_text = self.font.render(
-            f"Accuracy: {self.parent.accuracy:.2f}%", True, (255, 255, 255)
+            f"Accuracy: {self.parent.accuracy*100:.2f}%", True, (255, 255, 255)
         )
         hp_text = self.font.render(f"HP: {self.parent.hp}", True, (255, 255, 255))
 

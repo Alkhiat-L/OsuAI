@@ -58,6 +58,9 @@ class ObservationSpace:
                     "type": note.type_f.value,
                     "x": np.array([note.get_virtual_x()], dtype=np.float32),
                     "y": np.array([note.get_virtual_y()], dtype=np.float32),
+                    "end_time": np.array(
+                        [(note.duration or 0) + note.time], dtype=np.float32
+                    ),
                 }
             )
             for note in self.upcoming_notes[:5]
@@ -212,35 +215,14 @@ class OsuPy:
         ]
 
         done = False
-        if self.hp <= 0 or len(self.upcoming_notes) == 0:
+        if (
+            len(self.upcoming_notes) == 0
+        ):  # self.hp <= 0 or len(self.upcoming_notes) == 0:
             self.stop_game()
             done = True
 
         observation = self.get_observation()
         reward = self.get_reward()
-        if reward > 1000:
-            print(
-                "score",
-                self.score,
-                "last_score",
-                self.last_score,
-                "accuracy",
-                self.accuracy,
-                "last_accuracy",
-                self.last_accuracy,
-                "hp",
-                self.hp,
-                "last_hp",
-                self.last_hp,
-                "distance",
-                self._distance_from_next_note(),
-                "near_curve",
-                self.near_curve,
-                "game_time",
-                self.game_time,
-            )
-            print(f"reward: {reward}")
-            print("Por quê?")
 
         self.last_accuracy = self.accuracy
         self.last_score = self.score
@@ -272,14 +254,11 @@ class OsuPy:
             if error <= self.hit_window and distance <= 54:
                 self.hit_note(note)
                 return
-            if error <= self.hit_window * 2 and distance <= 70:
+            if error <= self.hit_window * 2 and distance <= 100:
                 self.hit_note(note, 100)
                 return
-            if error <= self.hit_window * 3 and distance <= 90:
+            if error <= self.hit_window * 3 and distance <= 150:
                 self.hit_note(note, 50)
-                return
-            if error <= self.hit_window * 4 and distance <= 110:
-                self.miss()
                 return
 
     def check_misses(self) -> None:
@@ -305,12 +284,14 @@ class OsuPy:
             )
             current_point = self.calculate_curve_point(self.curve_to_follow, progress)
 
+            self.renderer.point_to_render = current_point
+
             distance = math.sqrt(
                 (current_point[0] - self.mouse[0]) ** 2
                 + (current_point[1] - self.mouse[1]) ** 2
             )
             score = 0
-            if distance >= 100 or not self.hold:
+            if distance >= 200 or not self.hold:
                 self.curve_to_follow = None
             self.near_curve = 1
             if progress >= 0.5 and progress < 0.7:
@@ -370,7 +351,7 @@ class OsuPy:
                 )
             )
 
-        if note.type_f == NoteType.SLIDER:
+        if note.type_f == NoteType.SLIDER and not note.hit:
             self.effects.append(
                 e.SliderEffect(
                     note=note,
@@ -378,6 +359,7 @@ class OsuPy:
                 )
             )
             self.curve_to_follow = note
+            note.mark_hit()
 
     def miss(self) -> None:
         self.notes_len += 1
@@ -388,7 +370,7 @@ class OsuPy:
         return ObservationSpace(
             game_time=self.game_time,
             mouse_pos=self.mouse.copy(),
-            upcoming_notes=[note for note in self.upcoming_notes[:5]],
+            upcoming_notes=[note for note in self.upcoming_notes],
             hp=self.hp,
             curve=self.curve_to_follow,
             score=self.score,
@@ -434,7 +416,7 @@ class OsuPy:
         self.hp = 200
         self.last_hp = 200
         self.last_time = 0
-        self.state: States = States.IDLE
+        self.state = States.IDLE
         self.effects.clear()
         self.notes_len = 0
         self.notes_hit = 0

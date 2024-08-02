@@ -22,6 +22,7 @@ class Renderer:
         self.width = 800
         self.height = 600
         self.font = pygame.font.Font(None, 36)
+        self.point_to_render: tuple[int, int] = (0, 0)
 
     def render(self) -> None:
         if self.surface is None:
@@ -44,6 +45,9 @@ class Renderer:
 
         for effect in self.parent.effects:
             effect.draw(self.surface)
+
+        if self.point_to_render != (0, 0):
+            pygame.draw.circle(self.surface, (255, 255, 255), self.point_to_render, 10)
         # Draw cursor
 
         pygame.draw.circle(self.surface, (200, 200, 200), self.parent.mouse, 5)

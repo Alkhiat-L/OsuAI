@@ -21,21 +21,19 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
         self.osu = OsuPy()
         self.observation_space = gym.spaces.Dict(
             {
-                "game_time": gym.spaces.Box(low=0, high=240000, shape=(1,)),
+                "game_time": gym.spaces.Box(low=0, high=np.inf, shape=(1,)),
                 "x": gym.spaces.Box(low=0, high=800, shape=(1,)),
                 "y": gym.spaces.Box(low=0, high=600, shape=(1,)),
-                "upcoming_notes": gym.spaces.Tuple(
-                    [
-                        gym.spaces.Dict(
-                            {
-                                "x": gym.spaces.Box(low=0, high=800, shape=(1,)),
-                                "y": gym.spaces.Box(low=0, high=600, shape=(1,)),
-                                "time": gym.spaces.Box(low=0, high=240000, shape=(1,)),
-                                "type": gym.spaces.Discrete(4),
-                            }
-                        )
-                        for _ in range(5)
-                    ]
+                "upcoming_notes": gym.spaces.Sequence(
+                    gym.spaces.Dict(
+                        {
+                            "x": gym.spaces.Box(low=0, high=800, shape=(1,)),
+                            "y": gym.spaces.Box(low=0, high=600, shape=(1,)),
+                            "time": gym.spaces.Box(low=0, high=np.inf, shape=(1,)),
+                            "type": gym.spaces.Discrete(4),
+                            "end_time": gym.spaces.Box(low=0, high=np.inf, shape=(1,)),
+                        }
+                    ),
                 ),
                 "curve": gym.spaces.Box(low=0, high=2, shape=(8,), dtype=np.float32),
             }
@@ -44,7 +42,7 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
             {
                 "x": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
                 "y": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
-                "click": gym.spaces.Box(low=-1, high=1, shape=(1,), dtype=np.float32),
+                "click": gym.spaces.Discrete(2),
             }
         )
 
@@ -57,12 +55,21 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
 
         pass
 
+    def _get_info(self) -> dict[str, Any]:
+        return {
+            "game_time": self.osu.game_time,
+            "x": self.osu.mouse.x,
+            "y": self.osu.mouse.y,
+            "click": self.osu.hold,
+            "upcoming_notes": self.osu.upcoming_notes,
+        }
+
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
         action = gym.spaces.unflatten(self._action_space, action)  # type: ignore
         speed = 100
 
         return ActionSpace(
-            action["x"] * speed, action["y"] * speed, action["click"] >= 0
+            action["x"] * speed, action["y"] * speed, action["click"] == 1
         )
 
     def step(

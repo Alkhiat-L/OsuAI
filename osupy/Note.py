@@ -23,6 +23,7 @@ class Note:
     slides: int = 1
     length: Optional[float] = None
     beatmap: Optional["Beatmap"] = None
+    hit: bool = False
 
     def __post_init__(self) -> None:
         if self.beatmap is None:
@@ -31,7 +32,7 @@ class Note:
             return
         self.duration = (
             abs(
-                (self.length / (self.beatmap.slider_multiplier * 100))
+                (self.length / (self.beatmap.slider_multiplier * 100 * 2))
                 * self.beatmap.timing_points[self.time].beat_length
             )
             * 10
@@ -72,3 +73,6 @@ class Note:
             curve_points=curve_points,
             length=float(args[7]),
         )
+
+    def mark_hit(self) -> None:
+        self.hit = True

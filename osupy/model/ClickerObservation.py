@@ -1,6 +1,6 @@
 from typing import Any
 import gymnasium as gym
-from gymnasium.spaces import Box, Discrete
+from gymnasium.spaces import Box
 
 import numpy as np
 

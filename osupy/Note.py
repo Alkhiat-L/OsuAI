@@ -25,6 +25,12 @@ class Note:
     beatmap: Optional["Beatmap"] = None
     hit: bool = False
 
+    @property
+    def end_time(self) -> float:
+        if self.duration is None:
+            return 0
+        return self.time + self.duration
+
     def __post_init__(self) -> None:
         if self.beatmap is None:
             return

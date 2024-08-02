@@ -5,7 +5,7 @@ from gymnasium.spaces import Box
 import numpy as np
 
 
-class ClickerObservation(gym.wrappers.ObservationWrapper):  # type: ignore
+class ClickerObservation(gym.ObservationWrapper):  # type: ignore
     def __init__(self, env: gym.Env):
         super().__init__(env)
         self.observation_space = gym.spaces.Dict(
@@ -17,8 +17,16 @@ class ClickerObservation(gym.wrappers.ObservationWrapper):  # type: ignore
         )
 
     def observation(self, observation: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "game_time": observation["game_time"],
-            "next_note_time": observation["upcoming_note"][0]["time"],
-            "next_note_end_time": observation["upcoming_note"][0]["end_time"],
-        }
+        try:
+            return {
+                "game_time": observation["game_time"],
+                "next_note_time": observation["upcoming_notes"][0]["time"],
+                "next_note_end_time": observation["upcoming_notes"][0]["end_time"],
+            }
+        except Exception:
+            print("IndexError", observation["upcoming_notes"][0])
+            return {
+                "game_time": observation["game_time"],
+                "next_note_time": 0,
+                "next_note_end_time": 0,
+            }

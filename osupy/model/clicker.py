@@ -23,11 +23,13 @@ if __name__ == "__main__":
     env = ClickerAction(env)
     env = ClickerReward(env)
     wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
-    model = PPO(policy="MlpPolicy", env=wrapped_env, verbose=1)
+    model = PPO(policy="MlpPolicy", env=wrapped_env, verbose=1, batch_size=128)
 
     callbacks = []
 
-    eval_env = gym.wrappers.FlattenObservation(gym.make("osupy/OsuPyEnv-v0"))  # type: ignore
+    eval_env = gym.wrappers.FlattenObservation(  # type: ignore
+        ClickerReward(ClickerAction(ClickerObservation(gym.make("osupy/OsuPyEnv-v0"))))
+    )  # type: ignore
 
     callbacks.append(
         CheckpointCallback(
@@ -37,17 +39,6 @@ if __name__ == "__main__":
         )
     )
 
-    callbacks.append(
-        EvalCallback(
-            eval_env,
-            best_model_save_path="./clicker-logs/",
-            log_path="./clicker-logs/",
-            eval_freq=5000,
-            n_eval_episodes=20,
-            deterministic=True,
-        )
-    )
-
     callbacks.append(ProgressBarCallback())
 
-    model.learn(total_timesteps=100000, callback=callbacks)
+    model.learn(total_timesteps=2000000, callback=callbacks)

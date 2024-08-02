@@ -7,3 +7,4 @@ ppo-backup-*.zip
 *.mp3
 *.zip
 logs/evaluations.npz
+clicker-logs/evaluations.npz

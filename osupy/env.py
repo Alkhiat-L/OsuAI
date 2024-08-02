@@ -55,7 +55,7 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
 
         pass
 
-    def _get_info(self) -> dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         return {
             "game_time": self.osu.game_time,
             "x": self.osu.mouse.x,
@@ -65,7 +65,7 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
         }
 
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:
-        action = gym.spaces.unflatten(self._action_space, action)  # type: ignore
+        action = action
         speed = 100
 
         return ActionSpace(

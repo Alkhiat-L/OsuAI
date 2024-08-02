@@ -63,7 +63,7 @@ class ObservationSpace:
                     ),
                 }
             )
-            for note in self.upcoming_notes[:5]
+            for note in self.upcoming_notes
         ]
 
         if len(upcoming_notes) < 5:

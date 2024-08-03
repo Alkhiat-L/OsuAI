@@ -62,6 +62,7 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
             "y": self.osu.mouse.y,
             "click": self.osu.hold,
             "upcoming_notes": self.osu.upcoming_notes,
+            "curve": self.osu.curve_to_follow,
         }
 
     def _parse_action(self, action: dict[str, Any]) -> ActionSpace:

@@ -13,12 +13,13 @@ class ClickerReward(gym.RewardWrapper):  # type: ignore
     def reward(self, reward: SupportsFloat) -> float:
         try:
             next_note: Note = self.env.get_info()["upcoming_notes"][0]
+            curve = self.env.get_info()["curve"]
             hold = self.env.get_info()["click"]
             if hold:
-                if next_note.end_time > 0:
+                if curve:
                     if (
-                        self.env.osu.game_time >= next_note.time - 200
-                        and self.env.osu.game_time < next_note.end_time
+                        self.env.osu.game_time >= curve.time - 200
+                        and self.env.osu.game_time < curve.end_time
                     ):
                         return 1
                 if abs(next_note.time - self.env.osu.game_time) < 50:

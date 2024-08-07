@@ -124,9 +124,7 @@ class Info:
 
 
 class OsuPy:
-    def __init__(
-        self,
-    ) -> None:
+    def __init__(self, model: Optional[str] = None) -> None:
         self.renderer = Renderer(self)
         self.beatmap: Optional[Beatmap] = None
         self.notes = []
@@ -146,36 +144,22 @@ class OsuPy:
         self.mouse: pygame.math.Vector2 = pygame.math.Vector2(0, 0)
         self.delta: float = 0
         self.hold = False
-        self.hit_window = 300  # ms
+        self.hit_window = 50  # ms
         self.curve_to_follow: Optional[Note] = None
         self.near_curve = 0
-        # pygame.mixer.init()
-        # self.audio: Optional[pygame.mixer.Sound] = None
-        # self.audio_start_time = 0
+        assert model is None or model in ["click", "move"], "Invalid model"
+        self.model = model
 
     def start_game(self) -> None:
         self.state = States.HUMAN
         self.last_update_time = time.time()
-        # self.audio_start_time = time.time()
-        # if self.audio:
-        #     self.audio.set_volume(0.05)
-        #     self.audio.play()
 
     def stop_game(self) -> None:
-        # if self.audio:
-        #     self.audio.stop()
         self.state = States.IDLE
 
     def load_beatmap(self, file_path: str) -> None:
         self.beatmap = parse_beatmap(file_path)
         self.notes = self.beatmap.notes
-        # audio_path = os.path.join(
-        #     os.path.dirname(file_path), self.beatmap.audio_filename
-        # )
-        # if os.path.exists(audio_path):
-        #     self.audio = pygame.mixer.Sound(audio_path)
-        # else:
-        #     print(f"Warning: Audio file not found at {audio_path}")
         self.reset()
 
     def step(
@@ -193,13 +177,20 @@ class OsuPy:
         if self.mouse.y > 600:
             self.mouse.y = 600
 
+        if self.model == "click":
+            self.mouse.x = int(self.renderer.point_to_render[0])
+            self.mouse.y = int(self.renderer.point_to_render[1])
+
         if action.click and not self.hold:
             self.effects.append(e.SplashEffect(position=self.mouse.copy()))
             self.effects.append(e.ParticleEffect(position=self.mouse.copy()))
             self.check_hit()
             self.hold = True
 
-        self.renderer.point_to_render = self.upcoming_notes[0].get_virtual_position()
+        if len(self.upcoming_notes) > 0:
+            self.renderer.point_to_render = self.upcoming_notes[
+                0
+            ].get_virtual_position()
         self.check_misses()
         self.check_curve()
         self.accuracy = max(1, self.notes_hit) / max(1, self.notes_len)
@@ -213,7 +204,7 @@ class OsuPy:
         self.upcoming_notes = [
             note
             for note in self.upcoming_notes
-            if note.time > self.game_time - self.hit_window
+            if note.time > self.game_time - self.hit_window * 5
         ]
 
         done = False
@@ -231,8 +222,8 @@ class OsuPy:
         self.last_hp = self.hp
 
         if self.state != States.HUMAN:
-            self.game_time += 1000 / 30
-            self.delta = 1000 / 30
+            self.game_time += 1000 / 5
+            self.delta = 1000 / 5
 
         return (
             observation,
@@ -252,14 +243,16 @@ class OsuPy:
                 (note.get_virtual_x() - self.mouse[0]) ** 2
                 + (note.get_virtual_y() - self.mouse[1]) ** 2
             )
+            if self.model == "click":
+                distance = 0
             error = abs(note.time - self.game_time)
             if error <= self.hit_window and distance <= 54:
                 self.hit_note(note)
                 return
-            if error <= self.hit_window * 2 and distance <= 100:
+            if error <= self.hit_window * 2 and distance <= 70:
                 self.hit_note(note, 100)
                 return
-            if error <= self.hit_window * 3 and distance <= 150:
+            if error <= self.hit_window * 4 and distance <= 100:
                 self.hit_note(note, 50)
                 return
 
@@ -292,6 +285,10 @@ class OsuPy:
                 (current_point[0] - self.mouse[0]) ** 2
                 + (current_point[1] - self.mouse[1]) ** 2
             )
+
+            if self.model == "click":
+                distance = 0
+
             score = 0
             if distance >= 200 or not self.hold:
                 self.curve_to_follow = None

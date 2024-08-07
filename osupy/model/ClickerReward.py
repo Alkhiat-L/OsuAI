@@ -15,25 +15,28 @@ class ClickerReward(gym.RewardWrapper):  # type: ignore
             next_note: Note = self.env.get_info()["upcoming_notes"][0]
             curve = self.env.get_info()["curve"]
             hold = self.env.get_info()["click"]
-            if hold:
-                if curve:
-                    if (
-                        self.env.osu.game_time >= curve.time - 200
-                        and self.env.osu.game_time < curve.end_time
-                    ):
-                        return 1
-                if abs(next_note.time - self.env.osu.game_time) < 50:
-                    return 10
-                if abs(next_note.time - self.env.osu.game_time) < 100:
-                    return 5
-                if abs(next_note.time - self.env.osu.game_time) < 200:
-                    return 1
-                return -0.1
-
-            if next_note.time - self.env.osu.game_time > 200:
-                return -0.1
-
+            time_diff = abs(next_note.time - self.env.osu.game_time)
+            if curve:
+                if hold:
+                    return 1.0
+                return -1.0
+            if next_note.time - self.env.osu.game_time < -200:
+                return -1.0
+            if time_diff > 200:
+                if hold:
+                    return -1.0
+                else:
+                    return 0
+            if not hold:
+                return -1.0
+            if time_diff < 50:
+                return 10.0
+            if time_diff < 100:
+                return 5.0
+            if time_diff < 200:
+                return 1.5
             return 0
+
         except Exception:
             print("IndexError", self.env.get_info()["upcoming_notes"])
             return 0

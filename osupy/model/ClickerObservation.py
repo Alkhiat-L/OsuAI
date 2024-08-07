@@ -1,8 +1,6 @@
 from typing import Any
 import gymnasium as gym
-from gymnasium.spaces import Box
-
-import numpy as np
+from gymnasium.spaces import Discrete
 
 
 class ClickerObservation(gym.ObservationWrapper):  # type: ignore
@@ -10,23 +8,41 @@ class ClickerObservation(gym.ObservationWrapper):  # type: ignore
         super().__init__(env)
         self.observation_space = gym.spaces.Dict(
             {
-                "game_time": Box(low=0, high=np.inf, shape=(1,)),
-                "next_note_time": Box(low=0, high=np.inf, shape=(1,)),
-                "next_note_end_time": Box(low=0, high=np.inf, shape=(1,)),
+                "time_to_next_note": Discrete(4),
+                "curve_remaining": Discrete(2),
             }
         )
 
     def observation(self, observation: dict[str, Any]) -> dict[str, Any]:
         try:
+            # 0 = <50ms, 1 = <100ms, 2 = <200ms, 3 = >200ms
+            time_to_next_note_ms = (
+                observation["upcoming_notes"][0]["time"] - observation["game_time"]
+            )
+            time_to_next_note = 0
+            if time_to_next_note_ms > 200:
+                time_to_next_note = 3
+            elif time_to_next_note_ms > 100:
+                time_to_next_note = 2
+            elif time_to_next_note_ms > 50:
+                time_to_next_note = 1
+            else:
+                time_to_next_note = 0
+
+            # 0 = no curve, 1 = curve
+            curve_remaining = 0
+            if (
+                observation["upcoming_notes"][0]["next_note_end_time"]
+                - observation["game_time"]
+            ) > 0:
+                curve_remaining = 1
+
             return {
-                "game_time": observation["game_time"],
-                "next_note_time": observation["upcoming_notes"][0]["time"],
-                "next_note_end_time": observation["upcoming_notes"][0]["end_time"],
+                "time_to_next_note": time_to_next_note,
+                "curve_remaining": curve_remaining,
             }
         except Exception:
-            print("IndexError", observation["upcoming_notes"][0])
             return {
-                "game_time": observation["game_time"],
-                "next_note_time": 0,
-                "next_note_end_time": 0,
+                "time_to_next_note": 0,
+                "curve_remaining": 0,
             }

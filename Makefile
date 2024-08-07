@@ -27,6 +27,12 @@ env: test init
 model: test init
 	$(PYTHON) -m osupy.model
 
+clicker_model: test init
+	$(PYTHON) -m osupy.model.clicker
+
+clicker_test: test init
+	$(PYTHON) -m osupy.model.clicker_test
+
 debug_model: test init
 	$(PYTHON) -m debugpy --listen 5678 --wait-for-client -m osupy.model
 

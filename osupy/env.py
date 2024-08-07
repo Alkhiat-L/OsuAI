@@ -14,11 +14,12 @@ ActType = npt.NDArray[np.float32] | Dict[str, Any]
 
 
 class OsuPyEnv(gym.Env[ObsType, ActType]):
-    metadata = {"render_modes": ["human", "rgb_array"]}
+    metadata = {"render_modes": ["human", "rgb_array"], "model_ids": ["click", "move"]}
 
-    def __init__(self, render_mode: Optional[str] = None):
+    def __init__(self, render_mode: Optional[str] = None, model: Optional[str] = None):
         super(OsuPyEnv, self).__init__()
-        self.osu = OsuPy()
+        assert model is None or model in ["click", "move"], "Invalid model"
+        self.osu = OsuPy(model)
         self.observation_space = gym.spaces.Dict(
             {
                 "game_time": gym.spaces.Box(low=0, high=np.inf, shape=(1,)),

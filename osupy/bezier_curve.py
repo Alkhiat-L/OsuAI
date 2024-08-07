@@ -6,7 +6,7 @@ def bezier_curve(
 ) -> list[tuple[int, int]]:
     if numPoints is None:
         numPoints = 30
-    if numPoints < 2 or len(vertices) != 4:
+    if numPoints < 2:
         raise ValueError("Invalid number of vertices, must be 4: " + str(len(vertices)))
     result = []
 

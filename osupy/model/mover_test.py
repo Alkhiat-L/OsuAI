@@ -6,17 +6,19 @@ from osupy.env import OsuPyEnv as OsuPyEnv
 
 from stable_baselines3 import PPO
 
-from osupy.model import ClickerAction, ClickerObservation, ClickerReward
+from osupy.model import MoverAction, MoverObservation, MoverReward
 
 if __name__ == "__main__":
-    env = gym.make("osupy/OsuPyEnv-v0", render_mode="human", model="click")
-    env = ClickerObservation(env)
-    env = ClickerAction(env)
-    env = ClickerReward(env)  # type: ignore
+    env = gym.make("osupy/OsuPyEnv-v0", render_mode="human", model="move")
+    env = MoverObservation(env)
+    env = MoverAction(env)
+    env = MoverReward(env)  # type: ignore
+    print(env.observation_space)
     wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
+    print(wrapped_env.observation_space)
     model = PPO(policy="MlpPolicy", env=wrapped_env, verbose=1, n_steps=4096)  # type: ignore
 
-    model = model.load("clicker-logs/best_model.zip")
+    model = model.load("mover-logs/best_model.zip")
 
     obs, info = wrapped_env.reset()
     done = False

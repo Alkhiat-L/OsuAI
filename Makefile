@@ -33,6 +33,12 @@ clicker_model: test init
 clicker_test: test init
 	$(PYTHON) -m osupy.model.clicker_test
 
+mover_model: test init
+	$(PYTHON) -m osupy.model.mover
+
+mover_test: test init
+	$(PYTHON) -m osupy.model.mover_test
+
 debug_model: test init
 	$(PYTHON) -m debugpy --listen 5678 --wait-for-client -m osupy.model
 

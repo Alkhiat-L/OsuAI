@@ -15,7 +15,7 @@ if __name__ == "__main__":
     env = gym.make("osupy/OsuPyEnv-v0", model="click")
     env = ClickerObservation(env)
     env = ClickerAction(env)
-    env = ClickerReward(env)
+    env = ClickerReward(env)  # type: ignore
     wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
     model = PPO(policy="MlpPolicy", env=wrapped_env, verbose=1, n_steps=4096)
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     eval_env = gym.wrappers.FlattenObservation(  # type: ignore
         ClickerReward(
-            ClickerAction(
+            ClickerAction(  # type: ignore
                 ClickerObservation(gym.make("osupy/OsuPyEnv-v0", model="click"))
             )
         )
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     callbacks.append(
         CheckpointCallback(
             save_freq=10000,
-            save_path="./clicker-logs/",
+            save_path="./clicker-logs",
             name_prefix="osupy-ppo-clicker",
         )
     )
@@ -41,10 +41,10 @@ if __name__ == "__main__":
         EvalCallback(
             eval_env=eval_env,
             n_eval_episodes=5,
-            eval_freq=50000,
+            eval_freq=10000,
             deterministic=True,
             verbose=1,
-            best_model_save_path="./clicker-logs/best_model.zip",
+            best_model_save_path="./clicker-logs",
         )
     )
 

@@ -1,20 +1,20 @@
-from typing import SupportsFloat
+from typing import Any, Optional, SupportsFloat
 import gymnasium as gym
 
 from osupy.Note import Note
 from osupy.env import OsuPyEnv
 
 
-class ClickerReward(gym.RewardWrapper):  # type: ignore
-    def __init__(self, env: gym.Env):
+class ClickerReward(gym.RewardWrapper[Any, Any]):
+    def __init__(self, env: OsuPyEnv):
         super().__init__(env)
-        self.env: OsuPyEnv = env  # type: ignore
+        self.env: OsuPyEnv = env
 
     def reward(self, reward: SupportsFloat) -> float:
         try:
             next_note: Note = self.env.get_info()["upcoming_notes"][0]
-            curve = self.env.get_info()["curve"]
-            hold = self.env.get_info()["click"]
+            curve: Optional[Note] = self.env.get_info()["curve"]
+            hold: bool = self.env.get_info()["click"]
             time_diff = abs(next_note.time - self.env.osu.game_time)
             if curve:
                 if hold:

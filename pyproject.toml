@@ -3,22 +3,3 @@ name = "osupy"
 version = "0.1.1"
 description = "A Reinforcement Learning Environment for osu!"
 readme = "README.md"
-
-
-[tool.pyright]
-reportUnknownMemberType = false
-reportUnknownVariableType = false
-reportUnknownArgumentType = false
-
-ignore = [
-    "**/__pycache__",
-    ".venv",
-    "**/.vscode/extensions",
-    ".github",
-    "**/.mypy_cache",
-    "/usr/lib/python3.12/",
-    "~/.vscode/extensions",
-    "environment.py",
-    "main.py",
-    "OsuEnv.py",
-]

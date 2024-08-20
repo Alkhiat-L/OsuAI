@@ -138,6 +138,8 @@ class OsuPy:
         self.last_hp = 200
         self.notes_len = 0
         self.notes_hit = 0
+        self.width = 800
+        self.height = 600
         self.game_time = 0  # Time since the start of the beatmap
         self.last_update_time = 0  # Last time the game state was updated
         self.state: States = States.IDLE
@@ -166,16 +168,16 @@ class OsuPy:
         self, action: ActionSpace
     ) -> Tuple[dict[str, Any], float, bool, dict[str, Any]]:
         action = ActionSpace(action.delta_x, action.delta_y, action["click"])
-        self.mouse.x += action.delta_x
-        self.mouse.y += action.delta_y
+        self.mouse.x += action.delta_x * self.width
+        self.mouse.y += action.delta_y * self.height
         if self.mouse.x < 0:
             self.mouse.x = 0
         if self.mouse.y < 0:
             self.mouse.y = 0
-        if self.mouse.x > 800:
-            self.mouse.x = 800
-        if self.mouse.y > 600:
-            self.mouse.y = 600
+        if self.mouse.x > self.width:
+            self.mouse.x = self.width
+        if self.mouse.y > self.height:
+            self.mouse.y = self.height
 
         if self.model == "click":
             self.mouse.x = int(self.renderer.point_to_render[0])
@@ -222,8 +224,8 @@ class OsuPy:
         self.last_hp = self.hp
 
         if self.state != States.HUMAN:
-            self.game_time += 1000 / 5
-            self.delta = 1000 / 5
+            self.game_time += 1000 / 10
+            self.delta = 1000 / 10
 
         return (
             observation,
@@ -246,6 +248,8 @@ class OsuPy:
             if self.model == "click":
                 distance = 0
             error = abs(note.time - self.game_time)
+            if self.model == "move":
+                error = 0
             if error <= self.hit_window and distance <= 54:
                 self.hit_note(note)
                 return
@@ -261,7 +265,7 @@ class OsuPy:
             return
         for note in self.upcoming_notes:
             error = note.time - self.game_time
-            if error <= self.hit_window / 2:
+            if error <= -(self.hit_window / 2):
                 self.miss()
                 self.upcoming_notes.remove(note)
                 return
@@ -441,7 +445,9 @@ if __name__ == "__main__":
         mouse = pygame.mouse.get_pos()
         observation, reward, done, _ = osu.step(
             ActionSpace(
-                mouse[0] - lastMousePos[0], mouse[1] - lastMousePos[1], pressed_keys[0]
+                (mouse[0] - lastMousePos[0]) / 800,
+                (mouse[1] - lastMousePos[1]) / 600,
+                pressed_keys[0],
             )
         )
         lastMousePos = mouse

@@ -10,7 +10,7 @@ from osupy.perfect_circle import perfect_circle
 
 if TYPE_CHECKING:
     from OsuPy import OsuPy
-DEBUG = 0
+DEBUG = 1
 
 
 class Renderer:

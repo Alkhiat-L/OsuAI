@@ -24,10 +24,10 @@ class MoverObservation(gym.ObservationWrapper):
                 "mouse_x": (self.env.osu.mouse.x / self.env.osu.width),
                 "mouse_y": (self.env.osu.mouse.y / self.env.osu.height),
                 "next_note_x": (
-                    self.env.osu.upcoming_notes[0].get_virtual_x() / self.env.osu.width
+                    self.env.osu.renderer.point_to_render[0] / self.env.osu.width
                 ),
                 "next_note_y": (
-                    self.env.osu.upcoming_notes[0].get_virtual_y() / self.env.osu.height
+                    self.env.osu.renderer.point_to_render[1] / self.env.osu.height
                 ),
             }
         except IndexError:

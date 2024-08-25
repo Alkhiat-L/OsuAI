@@ -27,10 +27,12 @@ class Renderer:
         self.point_to_render: tuple[int, int] = (0, 0)
 
     def render(self) -> np.ndarray:
+        self.surface = pygame.Surface((self.width, self.height))
+
         if self.surface is None:
-            self.surface = pygame.display.set_mode((self.width, self.height))
-            if self.parent.state == 2:
-                pygame.display.set_caption("OsuPy")
+            self.window = pygame.display.set_mode((self.width, self.height))
+
+        pygame.display.set_caption("OsuPy")
 
         # Background
 
@@ -60,6 +62,7 @@ class Renderer:
         self.draw_ui()
 
         if self.parent.state == 2:
+            self.window.blit(self.surface, (0, 0))
             pygame.display.update()
             self.clock.tick(30)
 

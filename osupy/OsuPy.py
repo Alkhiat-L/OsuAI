@@ -398,15 +398,18 @@ class OsuPy:
             + ((self.game_time - 10000) / 1000)
         )
 
-    def render(self) -> None:
+    def render(self) -> Optional[np.ndarray]:
+        img = None
         if self.state == States.HUMAN:
-            self.renderer.render()
+            img = self.renderer.render()
             current_time = time.time()
             self.delta = (
                 current_time - self.last_update_time
             ) * 1000  # Convert to milliseconds
             self.game_time += self.delta
             self.last_update_time = current_time
+
+        return img
 
     def reset(self) -> dict[str, Any]:
         self.upcoming_notes = self.notes.copy()

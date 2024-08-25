@@ -100,8 +100,7 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
         return self.osu.get_observation(), {}
 
     def render(self):
-        if self.render_mode == "human":
-            self.osu.render()
+        return self.osu.render()
 
     def close(self):
         self.osu.stop_game()

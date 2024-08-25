@@ -7,6 +7,8 @@ from osupy.bezier_curve import bezier_curve
 from osupy.NoteType import NoteType
 from osupy.perfect_circle import perfect_circle
 
+import numpy as np
+
 
 if TYPE_CHECKING:
     from OsuPy import OsuPy
@@ -24,10 +26,11 @@ class Renderer:
         self.font = pygame.font.Font(None, 36)
         self.point_to_render: tuple[int, int] = (0, 0)
 
-    def render(self) -> None:
+    def render(self) -> np.ndarray:
         if self.surface is None:
             self.surface = pygame.display.set_mode((self.width, self.height))
-            pygame.display.set_caption("OsuPy")
+            if self.parent.state == 2:
+                pygame.display.set_caption("OsuPy")
 
         # Background
 
@@ -56,8 +59,13 @@ class Renderer:
 
         self.draw_ui()
 
-        pygame.display.update()
-        self.clock.tick(30)
+        if self.parent.state == 2:
+            pygame.display.update()
+            self.clock.tick(30)
+
+        return np.transpose(
+            np.array(pygame.surfarray.pixels3d(self.surface)), axes=(1, 0, 2)
+        )
 
     def draw_grid(self) -> None:
         if not self.surface:

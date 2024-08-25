@@ -1,26 +1,35 @@
 import sys
 import time
 import gymnasium as gym
+
+from gymnasium.wrappers.record_video import RecordVideo
 import pygame
 from osupy.env import OsuPyEnv as OsuPyEnv
 
-from stable_baselines3 import PPO
+from stable_baselines3 import TD3
+from stable_baselines3.common.env_util import make_vec_env
 
 from osupy.model import MoverAction, MoverObservation, MoverReward
 
 if __name__ == "__main__":
-    env = gym.make("osupy/OsuPyEnv-v0", render_mode="human", model="move")
-    env = MoverObservation(env)
-    env = MoverAction(env)
-    env = MoverReward(env)  # type: ignore
-    print(env.observation_space)
-    wrapped_env = gym.wrappers.FlattenObservation(env)  # type: ignore
-    print(wrapped_env.observation_space)
-    model = PPO(policy="MlpPolicy", env=wrapped_env, verbose=1, n_steps=4096)  # type: ignore
 
-    model = model.load("mover-logs/best_model.zip")
+    def make_env():
+        env = OsuPyEnv(render_mode="rgb_array", model="move")
+        env = MoverObservation(env)
+        env = MoverAction(env)
+        env = MoverReward(env)
+        env = RecordVideo(env, "mover-logs/video.mp4")
+        return env
 
-    obs, info = wrapped_env.reset()
+    env = make_vec_env(make_env, n_envs=1)
+
+    model = TD3(policy="MultiInputPolicy", env=env, verbose=1, device="cuda").load(
+        "mover-logs/best_model.zip", env=env
+    )
+
+    model.learn(total_timesteps=10000, reset_num_timesteps=False)
+
+    obs = env.reset()
     done = False
     i = 0
     while not done:
@@ -28,12 +37,12 @@ if __name__ == "__main__":
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-        action, _ = model.predict(obs)
+        action, _ = model.predict(obs)  # type: ignore
         start_time = time.time()
         rewards = 0
-        obs, rewards, done, _, info = wrapped_env.step(action)
+        obs, reward, done, _ = env.step(action)
         while (time.time() - start_time) < (1000 / 10000):
-            wrapped_env.render()
+            env.render()
         i += 1
         print(f"Step {i} reward: {rewards}")
 

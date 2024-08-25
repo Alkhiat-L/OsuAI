@@ -10,3 +10,4 @@ stable-baselines3
 pygame
 pytest
 debugpy
+moviepy

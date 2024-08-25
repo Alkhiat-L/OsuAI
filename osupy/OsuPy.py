@@ -399,9 +399,8 @@ class OsuPy:
         )
 
     def render(self) -> Optional[np.ndarray]:
-        img = None
+        img = self.renderer.render()
         if self.state == States.HUMAN:
-            img = self.renderer.render()
             current_time = time.time()
             self.delta = (
                 current_time - self.last_update_time

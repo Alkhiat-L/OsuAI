@@ -155,7 +155,7 @@ class OsuPy:
         self.model = model
         assert render_mode is None or render_mode in [
             "human",
-            "rgb-array",
+            "rgb_array",
         ], "Invalid render mode"
         self.render_mode = render_mode
 
@@ -407,7 +407,7 @@ class OsuPy:
 
     def render(self) -> Optional[np.ndarray]:
         img = None
-        if self.render_mode == "human" or self.render_mode == "rgb-array":
+        if self.render_mode == "human" or self.render_mode == "rgb_array":
             img = self.renderer.render()
         if self.state == States.HUMAN:
             current_time = time.time()

@@ -29,7 +29,7 @@ class Renderer:
     def render(self) -> Optional[np.ndarray]:
         if (
             self.parent.render_mode != "human"
-            and self.parent.render_mode != "rgb-array"
+            and self.parent.render_mode != "rgb_array"
         ):
             return None
         self.surface = pygame.Surface((self.width, self.height))

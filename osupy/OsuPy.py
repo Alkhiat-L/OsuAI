@@ -168,8 +168,8 @@ class OsuPy:
         self, action: ActionSpace
     ) -> Tuple[dict[str, Any], float, bool, dict[str, Any]]:
         action = ActionSpace(action.delta_x, action.delta_y, action["click"])
-        self.mouse.x += action.delta_x * 100
-        self.mouse.y += action.delta_y * 100
+        self.mouse.x += action.delta_x * 10
+        self.mouse.y += action.delta_y * 10
         if self.mouse.x < 0:
             self.mouse.x = 0
         if self.mouse.y < 0:

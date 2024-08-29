@@ -124,7 +124,9 @@ class Info:
 
 
 class OsuPy:
-    def __init__(self, model: Optional[str] = None) -> None:
+    def __init__(
+        self, model: Optional[str] = None, render_mode: Optional[str] = None
+    ) -> None:
         self.renderer = Renderer(self)
         self.beatmap: Optional[Beatmap] = None
         self.notes = []
@@ -151,6 +153,11 @@ class OsuPy:
         self.near_curve = 0
         assert model is None or model in ["click", "move"], "Invalid model"
         self.model = model
+        assert render_mode is None or render_mode in [
+            "human",
+            "rgb-array",
+        ], "Invalid render mode"
+        self.render_mode = render_mode
 
     def start_game(self) -> None:
         self.state = States.HUMAN
@@ -400,8 +407,9 @@ class OsuPy:
 
     def render(self) -> Optional[np.ndarray]:
         img = None
-        if self.state == States.HUMAN:
+        if self.render_mode == "human" or self.render_mode == "rgb-array":
             img = self.renderer.render()
+        if self.state == States.HUMAN:
             current_time = time.time()
             self.delta = (
                 current_time - self.last_update_time

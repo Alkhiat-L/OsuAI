@@ -26,7 +26,12 @@ class Renderer:
         self.font = pygame.font.Font(None, 36)
         self.point_to_render: tuple[int, int] = (0, 0)
 
-    def render(self) -> np.ndarray:
+    def render(self) -> Optional[np.ndarray]:
+        if (
+            self.parent.render_mode != "human"
+            and self.parent.render_mode != "rgb-array"
+        ):
+            return None
         self.surface = pygame.Surface((self.width, self.height))
 
         if self.surface is None:

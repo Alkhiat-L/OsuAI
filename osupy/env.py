@@ -19,7 +19,10 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
     def __init__(self, render_mode: Optional[str] = None, model: Optional[str] = None):
         super(OsuPyEnv, self).__init__()
         assert model is None or model in ["click", "move"], "Invalid model"
-        self.osu = OsuPy(model)
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+        self.model = model
+        self.osu = OsuPy(model, render_mode)
         self.observation_space = gym.spaces.Dict(
             {
                 "game_time": gym.spaces.Box(low=0, high=np.inf, shape=(1,)),
@@ -49,8 +52,6 @@ class OsuPyEnv(gym.Env[ObsType, ActType]):
 
         self.action_space = gym.spaces.flatten_space(self._action_space)  # type: ignore
 
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
-        self.render_mode = render_mode
         if self.render_mode == "human":
             self.osu.state = States.HUMAN
 

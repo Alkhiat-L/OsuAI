@@ -248,6 +248,8 @@ class OsuPy:
         )
 
     def check_hit(self) -> None:
+        if len(self.upcoming_notes) == 0:
+            return
         note = self.upcoming_notes[0]
         distance = math.sqrt(
             (note.get_virtual_x() - self.mouse[0]) ** 2

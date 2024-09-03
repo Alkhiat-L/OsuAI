@@ -349,7 +349,7 @@ class OsuPy:
         self.notes_len += 1
         if not note.type_f == NoteType.SLIDER:
             self.score += score
-            if score == 50:
+            if score >= 50:
                 self.notes_hit += 1
 
             self.hp = min(200, self.hp + 20)

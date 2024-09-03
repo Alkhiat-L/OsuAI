@@ -183,11 +183,8 @@ class Renderer:
         accuracy_text = self.font.render(
             f"Accuracy: {self.parent.accuracy*100:.2f}%", True, (255, 255, 255)
         )
-        hp_text = self.font.render(f"HP: {self.parent.hp}", True, (255, 255, 255))
-
         self.surface.blit(score_text, (10, 10))
         self.surface.blit(accuracy_text, (10, 50))
-        self.surface.blit(hp_text, (10, 90))
 
         if DEBUG:
             self.debug_ui()

@@ -139,7 +139,6 @@ class OsuPy:
         self.hp = 200
         self.last_hp = 200
         self.notes_len = 0
-        self.notes_hit = 0
         self.width = 800
         self.height = 600
         self.game_time = 0  # Time since the start of the beatmap
@@ -202,7 +201,9 @@ class OsuPy:
             ].get_virtual_position()
         self.check_misses()
         self.check_curve()
-        self.accuracy = max(1, self.notes_hit) / max(1, self.notes_len)
+        self.accuracy = max(1, self.notes_hit) / max(
+            1, len(self.notes) - len(self.upcoming_notes)
+        )
         if not action.click and self.hold:
             self.hold = False
         if self.curve_to_follow is None:
@@ -346,10 +347,9 @@ class OsuPy:
         return points[int(len(points) * progress)]
 
     def hit_note(self, note: Note, score: int = 300) -> None:
-        self.notes_len += 1
         if not note.type_f == NoteType.SLIDER:
             self.score += score
-            if score == 50:
+            if score >= 50:
                 self.notes_hit += 1
 
             self.hp = min(200, self.hp + 20)
@@ -372,8 +372,6 @@ class OsuPy:
             note.mark_hit()
 
     def miss(self) -> None:
-        self.notes_len += 1
-        self.accuracy = self.notes_hit / self.notes_len
         self.hp = max(0, self.hp - 10)
 
     def get_observation(self) -> OrderedDict[str, Any]:
@@ -432,7 +430,6 @@ class OsuPy:
         self.last_time = 0
         self.state = States.IDLE
         self.effects.clear()
-        self.notes_len = 0
         self.notes_hit = 0
 
         self.audio_start_time = 0

@@ -1,5 +1,7 @@
 # OsuAI
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1eUIJQWWizp9amvMdh9FnrZnCdss-7VQt?usp=sharing)
+
 O Osu! é um jogo de ritmo popular que desafia o jogador a clicar em círculos, arrastar sliders e girar spinners no tempo certo com a música.
 Este projeto visa aplicar técnicas de aprendizado por reforço (RL), o qual tem se tornado uma ferramenta poderosa para treinar agentes de inteligência artificial (IA) a realizar tarefas complexas, e Aprendizado por Imitação para criar uma IA capaz de jogar Osu! em alto nível. Dentro de suas capacidades, um agente deve ser capaz de realizar tarefas que exigem alta coordenação e velocidade, habilidades que também são necessárias em jogos de ritmo.
 A combinação de precisão temporal, movimento do cursor e alta velocidade faz do Osu! um desafio para o modelo de IA.
